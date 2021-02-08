@@ -38,7 +38,7 @@ public final class CohortMembershipTest {
         final NewCohortResponse response = membershipService.newCohort(request);
         final Cohort cohort = response.getCohort();
         assertNotNull(cohort);
-        assertEquals("/" + namespace + "/cohorts/" + request.getCohortType().name(), cohort.getPath());
+        assertEquals("/" + namespace + "/cohorts/" + request.getCohortType().name() + "/" + cohort.getId(), cohort.getPath());
         logger.info(response);
     }
 

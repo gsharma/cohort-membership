@@ -97,13 +97,6 @@ final class ZkMembershipService implements MembershipService {
                 cohortRootPath = serverProxy.create(namespacePath + "/cohorts", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                 logger.info("Created cohort root:{}", cohortRootPath);
 
-                // for (final CohortType cohortType : CohortType.values()) {
-                // final String cohortChildPath = serverProxy.create(cohortRootPath + "/" + cohortType, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                // CreateMode.PERSISTENT);
-                // cohortPaths.put(cohortType, cohortChildPath);
-                // logger.info("Created cohort:{}", cohortChildPath);
-                // }
-
                 serverSessionId = serverProxy.getSessionId();
                 ready.set(true);
                 logger.info("Started ZkCohortMembership [{}], state:{}, sessionId:{}, namespace:{}",
@@ -166,11 +159,19 @@ final class ZkMembershipService implements MembershipService {
 
         String cohortChildPath = null;
         try {
-            cohortChildPath = cohortRootPath + "/" + cohortType;
-            logger.info("Creating cohort {}", cohortChildPath);
-            cohortChildPath = serverProxy.create(cohortChildPath, cohortId.getBytes(),
-                    ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-            cohortPaths.put(cohortType, cohortChildPath);
+            String cohortTypePath = cohortRootPath + "/" + cohortType;
+            if (serverProxy.exists(cohortTypePath, false) == null) {
+                logger.info("Creating cohort type {}", cohortTypePath);
+                cohortTypePath = serverProxy.create(cohortTypePath, null,
+                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                cohortPaths.put(cohortType, cohortTypePath);
+            }
+            cohortChildPath = cohortTypePath + "/" + cohortId;
+            if (serverProxy.exists(cohortChildPath, false) == null) {
+                logger.info("Creating cohort child {}", cohortChildPath);
+                cohortChildPath = serverProxy.create(cohortChildPath, null,
+                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            }
         } catch (final KeeperException keeperException) {
             if (keeperException instanceof KeeperException.NodeExistsException) {
                 // node already exists
@@ -190,7 +191,6 @@ final class ZkMembershipService implements MembershipService {
 
         final NewCohortResponse response = new NewCohortResponse();
         response.setCohort(cohort);
-
         return response;
     }
 
@@ -232,6 +232,18 @@ final class ZkMembershipService implements MembershipService {
                     "Invalid attempt to operate an already stopped membership service");
         }
         return null;
+    }
+
+    private static boolean checkIdempotency(final KeeperException keeperException) {
+        boolean idempotent = false;
+        switch (keeperException.code()) {
+            case CONNECTIONLOSS:
+            case SESSIONEXPIRED:
+            case SESSIONMOVED:
+            case OPERATIONTIMEOUT:
+                idempotent = true;
+        }
+        return idempotent;
     }
 
 }
