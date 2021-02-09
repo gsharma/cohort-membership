@@ -10,6 +10,8 @@ interface MembershipService extends Lifecycle {
 
     NewCohortResponse newCohort(final NewCohortRequest request) throws MembershipServerException;
 
+    NewNodeResponse newNode(final NewNodeRequest request) throws MembershipServerException;
+
     ListCohortsResponse listCohorts(final ListCohortsRequest request) throws MembershipServerException;
 
     JoinCohortResponse joinCohort(final JoinCohortRequest request) throws MembershipServerException;

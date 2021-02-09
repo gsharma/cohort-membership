@@ -31,15 +31,35 @@ public final class CohortMembershipTest {
     private MembershipService membershipService;
 
     @Test
-    public void newCohortTest() throws Exception {
-        final NewCohortRequest request = new NewCohortRequest();
-        request.setCohortId(UUID.randomUUID().toString());
-        request.setCohortType(CohortType.ONE);
-        final NewCohortResponse response = membershipService.newCohort(request);
-        final Cohort cohort = response.getCohort();
+    public void testBasicJoin() throws Exception {
+        // create a node
+        final NewNodeRequest newNodeRequest = new NewNodeRequest();
+        newNodeRequest.setNodeId(UUID.randomUUID().toString());
+        newNodeRequest.setAddress(new InetSocketAddress(serverHost, serverPort));
+        final NewNodeResponse newNodeResponse = membershipService.newNode(newNodeRequest);
+        final Node node = newNodeResponse.getNode();
+        assertNotNull(node);
+        assertEquals("/" + namespace + "/nodes/" + node.getId(), node.getPath());
+
+        // create a cohort
+        final NewCohortRequest newCohortRequest = new NewCohortRequest();
+        newCohortRequest.setCohortId(UUID.randomUUID().toString());
+        newCohortRequest.setCohortType(CohortType.ONE);
+        final NewCohortResponse newCohortResponse = membershipService.newCohort(newCohortRequest);
+        final Cohort cohort = newCohortResponse.getCohort();
         assertNotNull(cohort);
-        assertEquals("/" + namespace + "/cohorts/" + request.getCohortType().name() + "/" + cohort.getId(), cohort.getPath());
-        logger.info(response);
+        assertEquals("/" + namespace + "/cohorts/" + newCohortRequest.getCohortType().name() + "/" + cohort.getId(), cohort.getPath());
+
+        final JoinCohortRequest joinCohortRequest = new JoinCohortRequest();
+        joinCohortRequest.setCohortId(cohort.getId());
+        joinCohortRequest.setCohortType(cohort.getType());
+        joinCohortRequest.setNodeId(node.getId());
+        joinCohortRequest.setMemberId(UUID.randomUUID().toString());
+        final JoinCohortResponse joinCohortResponse = membershipService.joinCohort(joinCohortRequest);
+        final Member member = joinCohortResponse.getMember();
+        assertNotNull(member);
+        assertEquals("/" + namespace + "/cohorts/" + newCohortRequest.getCohortType().name() + "/" + cohort.getId() + "/members/" +
+                member.getMemberId(), member.getPath());
     }
 
     @Before
