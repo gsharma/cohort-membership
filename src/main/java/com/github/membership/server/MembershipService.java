@@ -6,7 +6,9 @@ import java.util.List;
 import com.github.membership.lib.Lifecycle;
 
 interface MembershipService extends Lifecycle {
-    // reload
+    // reloadable
+
+    NewCohortTypeResponse newCohortType(final NewCohortTypeRequest request) throws MembershipServerException;
 
     NewCohortResponse newCohort(final NewCohortRequest request) throws MembershipServerException;
 
@@ -19,6 +21,10 @@ interface MembershipService extends Lifecycle {
     DescribeCohortResponse describeCohort(final DescribeCohortRequest request) throws MembershipServerException;
 
     LeaveCohortResponse leaveCohort(final LeaveCohortRequest request) throws MembershipServerException;
+
+    DeleteCohortResponse deleteCohort(final DeleteCohortRequest request) throws MembershipServerException;
+
+    DeleteCohortTypeResponse deleteCohortType(final DeleteCohortTypeRequest request) throws MembershipServerException;
 
     static MembershipService getMembership(final List<InetSocketAddress> serverAddresses, final String namespace) {
         return new ZkMembershipService(serverAddresses, namespace);

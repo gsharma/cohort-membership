@@ -1,9 +1,9 @@
 package com.github.membership.server;
 
-public final class LeaveCohortRequest {
+public final class DeleteCohortResponse {
     private String cohortId;
     private CohortType cohortType;
-    private String memberId;
+    private boolean success;
 
     public String getCohortId() {
         return cohortId;
@@ -21,16 +21,16 @@ public final class LeaveCohortRequest {
         this.cohortType = cohortType;
     }
 
-    public String getMemberId() {
-        return memberId;
+    public boolean isSuccess() {
+        return success;
     }
 
-    public void setMemberId(String memberId) {
-        this.memberId = memberId;
+    public void setSuccess(boolean success) {
+        this.success = success;
     }
 
     @Override
     public String toString() {
-        return "LeaveCohortRequest [cohortId=" + cohortId + ", cohortType=" + cohortType + ", memberId=" + memberId + "]";
+        return "DeleteCohortResponse [cohortId=" + cohortId + ", cohortType=" + cohortType + ", success=" + success + "]";
     }
 }

@@ -32,41 +32,159 @@ public final class CohortMembershipTest {
 
     @Test
     public void testBasicJoin() throws Exception {
-        // create a node
-        final NewNodeRequest newNodeRequest = new NewNodeRequest();
-        newNodeRequest.setNodeId(UUID.randomUUID().toString());
-        final String serverHost = "localhost";
-        final int serverPort = 8000;
-        newNodeRequest.setAddress(new InetSocketAddress(serverHost, serverPort));
-        final NewNodeResponse newNodeResponse = membershipService.newNode(newNodeRequest);
-        final Node node = newNodeResponse.getNode();
-        assertNotNull(node);
-        assertEquals("/" + namespace + "/nodes/" + node.getId(), node.getPath());
+        logger.info("[step-1] create nodeOne");
+        final NewNodeRequest newNodeRequestOne = new NewNodeRequest();
+        newNodeRequestOne.setNodeId(UUID.randomUUID().toString());
+        final String serverHostOne = "localhost";
+        final int serverPortOne = 8000;
+        newNodeRequestOne.setAddress(new InetSocketAddress(serverHostOne, serverPortOne));
+        final NewNodeResponse newNodeResponseOne = membershipService.newNode(newNodeRequestOne);
+        final Node nodeOne = newNodeResponseOne.getNode();
+        assertNotNull(nodeOne);
+        assertEquals("/" + namespace + "/nodes/" + nodeOne.getId(), nodeOne.getPath());
 
-        // create a cohort
-        final NewCohortRequest newCohortRequest = new NewCohortRequest();
-        newCohortRequest.setCohortId(UUID.randomUUID().toString());
-        newCohortRequest.setCohortType(CohortType.ONE);
-        final NewCohortResponse newCohortResponse = membershipService.newCohort(newCohortRequest);
-        final Cohort cohort = newCohortResponse.getCohort();
-        assertNotNull(cohort);
-        assertEquals("/" + namespace + "/cohorts/" + newCohortRequest.getCohortType().name() + "/" + cohort.getId(), cohort.getPath());
+        logger.info("[step-2] create nodeTwo");
+        final NewNodeRequest newNodeRequestTwo = new NewNodeRequest();
+        newNodeRequestTwo.setNodeId(UUID.randomUUID().toString());
+        final String serverHostTwo = "localhost";
+        final int serverPortTwo = 8001;
+        newNodeRequestOne.setAddress(new InetSocketAddress(serverHostTwo, serverPortTwo));
+        final NewNodeResponse newNodeResponseTwo = membershipService.newNode(newNodeRequestTwo);
+        final Node nodeTwo = newNodeResponseTwo.getNode();
+        assertNotNull(nodeTwo);
+        assertEquals("/" + namespace + "/nodes/" + nodeTwo.getId(), nodeTwo.getPath());
 
-        final JoinCohortRequest joinCohortRequest = new JoinCohortRequest();
-        joinCohortRequest.setCohortId(cohort.getId());
-        joinCohortRequest.setCohortType(cohort.getType());
-        joinCohortRequest.setNodeId(node.getId());
-        joinCohortRequest.setMemberId(UUID.randomUUID().toString());
-        final JoinCohortResponse joinCohortResponse = membershipService.joinCohort(joinCohortRequest);
-        final Member member = joinCohortResponse.getMember();
-        assertNotNull(member);
-        assertEquals(cohort.getPath() + "/members/" + member.getMemberId(), member.getPath());
+        logger.info("[step-3] create cohortTypeOne");
+        final NewCohortTypeRequest newCohortTypeRequestOne = new NewCohortTypeRequest();
+        newCohortTypeRequestOne.setCohortType(CohortType.ONE);
+        final NewCohortTypeResponse newCohortTypeResponseOne = membershipService.newCohortType(newCohortTypeRequestOne);
+        assertTrue(newCohortTypeResponseOne.isSuccess());
+        assertEquals(CohortType.ONE, newCohortTypeResponseOne.getCohortType());
+        assertEquals("/" + namespace + "/cohorts/" + newCohortTypeRequestOne.getCohortType().name(), newCohortTypeResponseOne.getPath());
+
+        logger.info("[step-4] create cohortTypeTwo");
+        final NewCohortTypeRequest newCohortTypeRequestTwo = new NewCohortTypeRequest();
+        newCohortTypeRequestTwo.setCohortType(CohortType.TWO);
+        final NewCohortTypeResponse newCohortTypeResponseTwo = membershipService.newCohortType(newCohortTypeRequestTwo);
+        assertTrue(newCohortTypeResponseTwo.isSuccess());
+        assertEquals(CohortType.TWO, newCohortTypeResponseTwo.getCohortType());
+        assertEquals("/" + namespace + "/cohorts/" + newCohortTypeRequestTwo.getCohortType().name(), newCohortTypeResponseTwo.getPath());
+
+        logger.info("[step-5] create cohortOne");
+        final NewCohortRequest newCohortRequestOne = new NewCohortRequest();
+        newCohortRequestOne.setCohortId(UUID.randomUUID().toString());
+        newCohortRequestOne.setCohortType(CohortType.ONE);
+        final NewCohortResponse newCohortResponseOne = membershipService.newCohort(newCohortRequestOne);
+        final Cohort cohortOne = newCohortResponseOne.getCohort();
+        assertNotNull(cohortOne);
+        assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/" + cohortOne.getId(), cohortOne.getPath());
+
+        logger.info("[step-6] create cohortTwo");
+        final NewCohortRequest newCohortRequestTwo = new NewCohortRequest();
+        newCohortRequestTwo.setCohortId(UUID.randomUUID().toString());
+        newCohortRequestTwo.setCohortType(CohortType.TWO);
+        final NewCohortResponse newCohortResponseTwo = membershipService.newCohort(newCohortRequestTwo);
+        final Cohort cohortTwo = newCohortResponseTwo.getCohort();
+        assertNotNull(cohortTwo);
+        assertEquals("/" + namespace + "/cohorts/" + newCohortRequestTwo.getCohortType().name() + "/" + cohortTwo.getId(), cohortTwo.getPath());
+
+        logger.info("[step-7] list cohorts, check for cohortOne and cohortTwo");
+
+        logger.info("[step-8] memberOne joins cohortOne");
+        final JoinCohortRequest joinCohortRequestOne = new JoinCohortRequest();
+        joinCohortRequestOne.setCohortId(cohortOne.getId());
+        joinCohortRequestOne.setCohortType(cohortOne.getType());
+        joinCohortRequestOne.setNodeId(nodeOne.getId());
+        joinCohortRequestOne.setMemberId(UUID.randomUUID().toString());
+        final JoinCohortResponse joinCohortResponseOne = membershipService.joinCohort(joinCohortRequestOne);
+        final Member memberOne = joinCohortResponseOne.getMember();
+        assertNotNull(memberOne);
+        assertEquals(cohortOne.getPath() + "/members/" + memberOne.getMemberId(), memberOne.getPath());
+
+        logger.info("[step-9] memberTwo joins cohortOne");
+        final JoinCohortRequest joinCohortRequestTwo = new JoinCohortRequest();
+        joinCohortRequestTwo.setCohortId(cohortOne.getId());
+        joinCohortRequestTwo.setCohortType(cohortOne.getType());
+        joinCohortRequestTwo.setNodeId(nodeTwo.getId());
+        joinCohortRequestTwo.setMemberId(UUID.randomUUID().toString());
+        final JoinCohortResponse joinCohortResponseTwo = membershipService.joinCohort(joinCohortRequestTwo);
+        final Member memberTwo = joinCohortResponseTwo.getMember();
+        assertNotNull(memberTwo);
+        assertEquals(cohortOne.getPath() + "/members/" + memberTwo.getMemberId(), memberTwo.getPath());
+
+        logger.info("[step-10] describe cohortOne, check for memberOne and memberTwo");
+        final DescribeCohortRequest describeCohortRequestOne = new DescribeCohortRequest();
+        describeCohortRequestOne.setCohortId(cohortOne.getId());
+        describeCohortRequestOne.setCohortType(cohortOne.getType());
+        final DescribeCohortResponse describeCohortResponseOne = membershipService.describeCohort(describeCohortRequestOne);
+        assertEquals(cohortOne.getId(), describeCohortResponseOne.getCohortId());
+        assertEquals(cohortOne.getType(), describeCohortResponseOne.getCohortType());
+        List<Member> members = describeCohortResponseOne.getMembers();
+        assertEquals(2, members.size());
+        final List<String> memberIds = new ArrayList<>();
+        for (final Member member : members) {
+            memberIds.add(member.getMemberId());
+        }
+        assertTrue(memberIds.contains(memberOne.getMemberId()));
+        assertTrue(memberIds.contains(memberTwo.getMemberId()));
+
+        logger.info("[step-11] describe cohortTwo, should have no members");
+        final DescribeCohortRequest describeCohortRequestTwo = new DescribeCohortRequest();
+        describeCohortRequestTwo.setCohortId(cohortTwo.getId());
+        describeCohortRequestTwo.setCohortType(cohortTwo.getType());
+        final DescribeCohortResponse describeCohortResponseTwo = membershipService.describeCohort(describeCohortRequestTwo);
+        assertEquals(cohortTwo.getId(), describeCohortResponseTwo.getCohortId());
+        assertEquals(cohortTwo.getType(), describeCohortResponseTwo.getCohortType());
+        members = describeCohortResponseTwo.getMembers();
+        assertEquals(0, members.size());
+
+        logger.info("[step-12] memberTwo leaves cohortOne");
+        final LeaveCohortRequest leaveCohortRequestOne = new LeaveCohortRequest();
+        leaveCohortRequestOne.setCohortId(cohortOne.getId());
+        leaveCohortRequestOne.setCohortType(cohortOne.getType());
+        leaveCohortRequestOne.setMemberId(memberTwo.getMemberId());
+        final LeaveCohortResponse leaveCohortResponseOne = membershipService.leaveCohort(leaveCohortRequestOne);
+        assertTrue(leaveCohortResponseOne.isSuccess());
+
+        logger.info("[step-13] describe cohortOne, check for presence of memberOne only");
+        final DescribeCohortRequest describeCohortRequestThree = new DescribeCohortRequest();
+        describeCohortRequestThree.setCohortId(cohortOne.getId());
+        describeCohortRequestThree.setCohortType(cohortOne.getType());
+        final DescribeCohortResponse describeCohortResponseThree = membershipService.describeCohort(describeCohortRequestThree);
+        assertEquals(cohortOne.getId(), describeCohortResponseThree.getCohortId());
+        assertEquals(cohortOne.getType(), describeCohortResponseThree.getCohortType());
+        members = describeCohortResponseThree.getMembers();
+        assertEquals(1, members.size());
+        assertEquals(memberOne.getMemberId(), members.get(0).getMemberId());
+
+        logger.info("[step-14] delete cohortTwo");
+        final DeleteCohortRequest deleteCohortRequestOne = new DeleteCohortRequest();
+        deleteCohortRequestOne.setCohortId(cohortTwo.getId());
+        deleteCohortRequestOne.setCohortType(cohortTwo.getType());
+        final DeleteCohortResponse deleteCohortResponseOne = membershipService.deleteCohort(deleteCohortRequestOne);
+        assertEquals(cohortTwo.getId(), deleteCohortResponseOne.getCohortId());
+        assertTrue(deleteCohortResponseOne.isSuccess());
+
+        logger.info("[step-15] delete cohortOne");
+        final DeleteCohortRequest deleteCohortRequestTwo = new DeleteCohortRequest();
+        deleteCohortRequestTwo.setCohortId(cohortOne.getId());
+        deleteCohortRequestTwo.setCohortType(cohortOne.getType());
+        final DeleteCohortResponse deleteCohortResponseTwo = membershipService.deleteCohort(deleteCohortRequestTwo);
+        assertEquals(cohortOne.getId(), deleteCohortResponseTwo.getCohortId());
+        assertTrue(deleteCohortResponseTwo.isSuccess());
+
+        logger.info("[step-16] delete cohortTypeOne");
+        final DeleteCohortTypeRequest deleteCohortTypeRequestOne = new DeleteCohortTypeRequest();
+        deleteCohortTypeRequestOne.setCohortType(cohortOne.getType());
+        final DeleteCohortTypeResponse deleteCohortTypeResponseOne = membershipService.deleteCohortType(deleteCohortTypeRequestOne);
+        assertEquals(cohortOne.getType(), deleteCohortTypeResponseOne.getCohortType());
+        assertTrue(deleteCohortTypeResponseOne.isSuccess());
     }
 
     @Before
     public void initTestCluster() throws Exception {
+        logger.info("[step-0] init testCluster");
         final List<InstanceSpec> instanceSpecs = new ArrayList<>();
-
         for (int iter = 0; iter < 3; iter++) {
             final String serverHost = "localhost";
             final int serverPort = 4000 + iter;
@@ -105,10 +223,12 @@ public final class CohortMembershipTest {
             logger.info("Stopping testCluster {}", testingCluster.getConnectString());
             testingCluster.close();
         }
+        logger.info("[step-n] tini testCluster");
     }
 
     // @Before
     public void initTestServer() throws Exception {
+        logger.info("[step-0] init testServer");
         final String serverHost = "localhost";
         final int serverPort = 4000;
         final File dataDir = new File("target/zkDataDir");
@@ -133,6 +253,7 @@ public final class CohortMembershipTest {
         if (testingServer != null) {
             testingServer.close();
         }
+        logger.info("[step-n] tini testServer");
     }
 
 }
