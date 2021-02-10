@@ -105,8 +105,8 @@ final class ZkMembershipService implements MembershipService {
 
                 serverSessionId = serverProxy.getSessionId();
                 ready.set(true);
-                logger.info("Started ZkCohortMembership [{}], state:{}, sessionId:{}, namespace:{}",
-                        getIdentity(), serverProxy.getState(), serverSessionId, namespacePath);
+                logger.info("Started ZkCohortMembership [{}], state:{}, sessionId:{}, namespace:{}, connectedTo:[{}]",
+                        getIdentity(), serverProxy.getState(), serverSessionId, namespacePath, connectString);
             } catch (final KeeperException keeperException) {
                 if (keeperException instanceof KeeperException.NodeExistsException) {
                     // node already exists
@@ -169,6 +169,7 @@ final class ZkMembershipService implements MembershipService {
                 logger.info("Creating cohort type {}", cohortTypePath);
                 cohortTypePath = serverProxy.create(cohortTypePath, null,
                         ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                // logger.debug("Created cohort type {}", cohortTypePath);
                 cohortPaths.put(cohortType, cohortTypePath);
             } else {
                 logger.warn("Failed to locate cohort type tree {}", cohortTypePath);
@@ -178,12 +179,19 @@ final class ZkMembershipService implements MembershipService {
                 logger.info("Creating cohort child {}", cohortChildPath);
                 cohortChildPath = serverProxy.create(cohortChildPath, null,
                         ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                // optional for debugging
+                if (serverProxy.exists(cohortChildPath, false) == null) {
+                    logger.warn("Failed to create cohort child {}", cohortChildPath);
+                }
 
-                final String membersChildPath = cohortChildPath + "/members";
-                logger.info("Creating members child {}", membersChildPath);
-                serverProxy.create(membersChildPath, null,
+                String membersChildPath = cohortChildPath + "/members";
+                logger.debug("Creating members child {}", membersChildPath);
+                membersChildPath = serverProxy.create(membersChildPath, null,
                         ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-                logger.info("Created members child {}", membersChildPath);
+                // optional for debugging
+                if (serverProxy.exists(membersChildPath, false) == null) {
+                    logger.warn("Failed to create members child {}", membersChildPath);
+                }
             } else {
                 logger.warn("Failed to locate cohort child tree {}", cohortChildPath);
             }
@@ -275,7 +283,7 @@ final class ZkMembershipService implements MembershipService {
         String memberChildPath = null;
         try {
             final String cohortMembersPath = cohortRootPath + "/" + cohortType + "/" + cohortId + "/members";
-            if (serverProxy.exists(cohortMembersPath, false) == null) {
+            if (serverProxy.exists(cohortMembersPath, false) != null) {
                 memberChildPath = cohortMembersPath + "/" + memberId;
                 logger.info("Creating member child {}", memberChildPath);
                 // TODO: save data in znode
