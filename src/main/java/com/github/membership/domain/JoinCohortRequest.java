@@ -1,6 +1,7 @@
 package com.github.membership.domain;
 
 public final class JoinCohortRequest {
+    private String namespace;
     private String nodeId;
     private CohortType cohortType;
     private String cohortId;
@@ -38,8 +39,17 @@ public final class JoinCohortRequest {
         this.memberId = memberId;
     }
 
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
     @Override
     public String toString() {
-        return "JoinCohortRequest [nodeId=" + nodeId + ", cohortType=" + cohortType + ", cohortId=" + cohortId + ", memberId=" + memberId + "]";
+        return "JoinCohortRequest [namespace=" + namespace + ", nodeId=" + nodeId + ", cohortType=" + cohortType + ", cohortId=" + cohortId
+                + ", memberId=" + memberId + "]";
     }
 }

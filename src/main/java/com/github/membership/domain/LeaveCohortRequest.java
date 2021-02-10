@@ -1,6 +1,7 @@
 package com.github.membership.domain;
 
 public final class LeaveCohortRequest {
+    private String namespace;
     private String cohortId;
     private CohortType cohortType;
     private String memberId;
@@ -29,8 +30,17 @@ public final class LeaveCohortRequest {
         this.memberId = memberId;
     }
 
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
     @Override
     public String toString() {
-        return "LeaveCohortRequest [cohortId=" + cohortId + ", cohortType=" + cohortType + ", memberId=" + memberId + "]";
+        return "LeaveCohortRequest [namespace=" + namespace + ", cohortId=" + cohortId + ", cohortType=" + cohortType + ", memberId=" + memberId
+                + "]";
     }
 }

@@ -19,12 +19,18 @@ import com.github.membership.domain.NewCohortRequest;
 import com.github.membership.domain.NewCohortResponse;
 import com.github.membership.domain.NewCohortTypeRequest;
 import com.github.membership.domain.NewCohortTypeResponse;
+import com.github.membership.domain.NewNamespaceRequest;
+import com.github.membership.domain.NewNamespaceResponse;
 import com.github.membership.domain.NewNodeRequest;
 import com.github.membership.domain.NewNodeResponse;
+import com.github.membership.domain.PurgeNamespaceRequest;
+import com.github.membership.domain.PurgeNamespaceResponse;
 import com.github.membership.lib.Lifecycle;
 
 interface MembershipService extends Lifecycle {
     // reloadable
+
+    NewNamespaceResponse newNamespace(final NewNamespaceRequest request) throws MembershipServerException;
 
     NewCohortTypeResponse newCohortType(final NewCohortTypeRequest request) throws MembershipServerException;
 
@@ -44,8 +50,10 @@ interface MembershipService extends Lifecycle {
 
     DeleteCohortTypeResponse deleteCohortType(final DeleteCohortTypeRequest request) throws MembershipServerException;
 
-    static MembershipService getService(final List<InetSocketAddress> serverAddresses, final String namespace) {
-        return new ZkMembershipService(serverAddresses, namespace);
+    PurgeNamespaceResponse purgeNamespace(final PurgeNamespaceRequest request) throws MembershipServerException;
+
+    static MembershipService getService(final List<InetSocketAddress> serverAddresses) {
+        return new ZkMembershipService(serverAddresses);
     }
 
 }

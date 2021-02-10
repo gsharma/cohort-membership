@@ -1,6 +1,7 @@
 package com.github.membership.domain;
 
 public final class DeleteCohortRequest {
+    private String namespace;
     private String cohortId;
     private CohortType cohortType;
 
@@ -20,8 +21,16 @@ public final class DeleteCohortRequest {
         this.cohortType = cohortType;
     }
 
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
     @Override
     public String toString() {
-        return "DeleteCohortRequest [cohortId=" + cohortId + ", cohortType=" + cohortType + "]";
+        return "DeleteCohortRequest [namespace=" + namespace + ", cohortId=" + cohortId + ", cohortType=" + cohortType + "]";
     }
 }

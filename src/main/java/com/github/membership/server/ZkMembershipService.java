@@ -5,10 +5,10 @@ import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -43,9 +43,13 @@ import com.github.membership.domain.NewCohortRequest;
 import com.github.membership.domain.NewCohortResponse;
 import com.github.membership.domain.NewCohortTypeRequest;
 import com.github.membership.domain.NewCohortTypeResponse;
+import com.github.membership.domain.NewNamespaceRequest;
+import com.github.membership.domain.NewNamespaceResponse;
 import com.github.membership.domain.NewNodeRequest;
 import com.github.membership.domain.NewNodeResponse;
 import com.github.membership.domain.Node;
+import com.github.membership.domain.PurgeNamespaceRequest;
+import com.github.membership.domain.PurgeNamespaceResponse;
 import com.github.membership.server.MembershipServerException.Code;
 
 final class ZkMembershipService implements MembershipService {
@@ -57,23 +61,20 @@ final class ZkMembershipService implements MembershipService {
     private final AtomicBoolean ready;
 
     private final List<InetSocketAddress> serverAddresses;
-    private final String namespace;
-    private Map<CohortType, String> cohortPaths;
 
     private ZooKeeper serverProxy;
     private long serverSessionId;
-    private String namespacePath;
-    private String cohortRootPath;
-    private String nodeRootPath;
 
-    ZkMembershipService(final List<InetSocketAddress> serverAddresses, final String namespace) {
+    private Set<String> trackedNamespaces;
+
+    ZkMembershipService(final List<InetSocketAddress> serverAddresses) {
         this.running = new AtomicBoolean(false);
         this.ready = new AtomicBoolean(false);
 
         this.serverAddresses = new ArrayList<>();
         this.serverAddresses.addAll(serverAddresses);
-        this.namespace = namespace;
-        this.cohortPaths = new ConcurrentHashMap<>();
+
+        this.trackedNamespaces = new CopyOnWriteArraySet<>();
     }
 
     @Override
@@ -87,8 +88,6 @@ final class ZkMembershipService implements MembershipService {
         if (running.compareAndSet(false, true)) {
             serverProxy = null;
             serverSessionId = 0;
-            namespacePath = null;
-            cohortPaths.clear();
 
             final CountDownLatch transitionedToConnected = new CountDownLatch(1);
             final StringBuilder connectString = new StringBuilder();
@@ -116,28 +115,10 @@ final class ZkMembershipService implements MembershipService {
                 logger.debug("Server proxy connection state:{}", serverProxy.getState());
                 transitionedToConnected.await();
 
-                // create namespace node
-                namespacePath = serverProxy.create("/" + namespace, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-                logger.info("Created namespace:{}", namespacePath);
-
-                // create cohorts root node
-                cohortRootPath = serverProxy.create(namespacePath + "/cohorts", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-                logger.info("Created cohorts root:{}", cohortRootPath);
-
-                // create nodes root node
-                nodeRootPath = serverProxy.create(namespacePath + "/nodes", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-                logger.info("Created nodes root:{}", nodeRootPath);
-
                 serverSessionId = serverProxy.getSessionId();
                 ready.set(true);
-                logger.info("Started ZkCohortMembership [{}], state:{}, sessionId:{}, namespace:{}, connectedTo:[{}]",
-                        getIdentity(), serverProxy.getState(), serverSessionId, namespacePath, connectString);
-            } catch (final KeeperException keeperException) {
-                if (keeperException instanceof KeeperException.NodeExistsException) {
-                    // node already exists
-                } else {
-                    throw new MembershipServerException(Code.MEMBERSHIP_INIT_FAILURE, keeperException);
-                }
+                logger.info("Started ZkCohortMembership [{}], state:{}, sessionId:{}, connectedTo:[{}]",
+                        getIdentity(), serverProxy.getState(), serverSessionId, connectString);
             } catch (final IOException zkConnectProblem) {
                 throw new MembershipServerException(Code.MEMBERSHIP_INIT_FAILURE, "Failed to start membership service");
             } catch (final InterruptedException zkConnectWaitProblem) {
@@ -157,7 +138,9 @@ final class ZkMembershipService implements MembershipService {
             ready.set(false);
             States state = null;
             try {
-                logger.info("Remaining tree nodes:{}", flattenTree(namespacePath));
+                for (final String namespace : trackedNamespaces) {
+                    logger.info("Remaining tree nodes:{}", flattenTree("/" + namespace));
+                }
                 serverProxy.close();
                 state = serverProxy.getState();
                 // logger.info("Server proxy connection state:{}, sessionId:{}", serverProxy.getState(), serverSessionId);
@@ -168,7 +151,6 @@ final class ZkMembershipService implements MembershipService {
                 Thread.currentThread().interrupt();
             } finally {
                 serverProxy = null;
-                namespacePath = null;
             }
             serverAddresses.clear();
             logger.info("Stopped ZkCohortMembership [{}], state:{}, sessionId:{}",
@@ -185,6 +167,95 @@ final class ZkMembershipService implements MembershipService {
     }
 
     @Override
+    public NewNamespaceResponse newNamespace(final NewNamespaceRequest request) throws MembershipServerException {
+        // TODO
+        logger.debug(request);
+        if (!isRunning()) {
+            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
+                    "Invalid attempt to operate an already stopped membership service");
+        }
+        final String namespace = request.getNamespace();
+        String namespacePath = "/" + namespace;
+        try {
+            // create namespace node
+            if (serverProxy.exists(namespacePath, false) == null) {
+                logger.info("Creating namespace {}", namespacePath);
+                namespacePath = serverProxy.create(namespacePath, null,
+                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+
+                // create cohorts root node
+                final String cohortRootPath = serverProxy.create(namespacePath + "/cohorts", null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                        CreateMode.PERSISTENT);
+                logger.info("Created cohorts root:{}", cohortRootPath);
+
+                // create nodes root node
+                final String nodeRootPath = serverProxy.create(namespacePath + "/nodes", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                logger.info("Created nodes root:{}", nodeRootPath);
+
+                trackedNamespaces.add(namespace);
+            } else {
+                logger.warn("Namespace already exists {}", namespacePath);
+            }
+        } catch (final KeeperException keeperException) {
+            if (keeperException instanceof KeeperException.NodeExistsException) {
+                // node already exists
+            } else {
+                // fix later
+                throw new MembershipServerException(Code.UNKNOWN_FAILURE, keeperException);
+            }
+        } catch (final InterruptedException interruptedException) {
+            // fix later
+            throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
+        }
+
+        final NewNamespaceResponse response = new NewNamespaceResponse();
+        response.setNamespace(namespace);
+        response.setPath(namespacePath);
+        response.setSuccess(true);
+        logger.debug(response);
+        return response;
+    }
+
+    @Override
+    public PurgeNamespaceResponse purgeNamespace(final PurgeNamespaceRequest request) throws MembershipServerException {
+        // TODO
+        logger.debug(request);
+        if (!isRunning()) {
+            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
+                    "Invalid attempt to operate an already stopped membership service");
+        }
+        final String namespace = request.getNamespace();
+        try {
+            final String namespacePath = "/" + namespace;
+            final List<String> childNodes = flattenTree(namespacePath);
+            // start with leaves, work up from there
+            for (int iter = childNodes.size() - 1; iter >= 0; iter--) {
+                final String path = childNodes.get(iter);
+                logger.info("Deleting {}", path);
+                serverProxy.delete(path, -1);
+            }
+
+            trackedNamespaces.remove(namespace);
+        } catch (final KeeperException keeperException) {
+            if (keeperException instanceof KeeperException.NodeExistsException) {
+                // node already exists
+            } else {
+                // fix later
+                throw new MembershipServerException(Code.UNKNOWN_FAILURE, keeperException);
+            }
+        } catch (final InterruptedException interruptedException) {
+            // fix later
+            throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
+        }
+
+        final PurgeNamespaceResponse response = new PurgeNamespaceResponse();
+        response.setNamespace(namespace);
+        response.setSuccess(true);
+        logger.debug(response);
+        return response;
+    }
+
+    @Override
     public NewCohortTypeResponse newCohortType(final NewCohortTypeRequest request) throws MembershipServerException {
         // TODO
         logger.debug(request);
@@ -192,17 +263,17 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        final String namespace = request.getNamespace();
         final CohortType cohortType = request.getCohortType();
+        final String cohortRootPath = "/" + namespace + "/cohorts";
         String cohortTypePath = cohortRootPath + "/" + cohortType;
         try {
             if (serverProxy.exists(cohortTypePath, false) == null) {
                 logger.info("Creating cohort type {}", cohortTypePath);
                 cohortTypePath = serverProxy.create(cohortTypePath, null,
                         ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-                // logger.debug("Created cohort type {}", cohortTypePath);
-                cohortPaths.put(cohortType, cohortTypePath);
             } else {
-                logger.warn("Failed to locate cohort type tree {}", cohortTypePath);
+                logger.warn("Cohort type tree already exsts {}", cohortTypePath);
             }
         } catch (final KeeperException keeperException) {
             if (keeperException instanceof KeeperException.NodeExistsException) {
@@ -232,10 +303,12 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        final String namespace = request.getNamespace();
         final String cohortId = request.getCohortId();
         final CohortType cohortType = request.getCohortType();
         String cohortChildPath = null;
         try {
+            final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortTypePath = cohortRootPath + "/" + cohortType;
             if (serverProxy.exists(cohortTypePath, false) == null) {
                 logger.warn("Failed to locate cohortType tree {}", cohortTypePath);
@@ -293,10 +366,12 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        final String namespace = request.getNamespace();
         final String nodeId = request.getNodeId();
         final InetSocketAddress address = request.getAddress();
         String nodeChildPath = null;
         try {
+            final String nodeRootPath = "/" + namespace + "/nodes";
             nodeChildPath = nodeRootPath + "/" + nodeId;
             if (serverProxy.exists(nodeChildPath, false) == null) {
                 logger.info("Creating node {}", nodeChildPath);
@@ -338,8 +413,10 @@ final class ZkMembershipService implements MembershipService {
                     "Invalid attempt to operate an already stopped membership service");
         }
 
+        final String namespace = request.getNamespace();
         final List<Cohort> cohorts = new ArrayList<>();
         try {
+            final String cohortRootPath = "/" + namespace + "/cohorts";
             final List<String> cohortTypes = serverProxy.getChildren(cohortRootPath, false);
             for (final String cohortType : cohortTypes) {
                 final String cohortTypePath = cohortRootPath + "/" + cohortType;
@@ -378,12 +455,14 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        final String namespace = request.getNamespace();
         final String memberId = request.getMemberId();
         final String cohortId = request.getCohortId();
         final CohortType cohortType = request.getCohortType();
         final String nodeId = request.getNodeId();
         String memberChildPath = null;
         try {
+            final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortMembersPath = cohortRootPath + "/" + cohortType + "/" + cohortId + "/members";
             if (serverProxy.exists(cohortMembersPath, false) == null) {
                 logger.warn("Failed to locate member tree {}", cohortMembersPath);
@@ -427,11 +506,13 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        final String namespace = request.getNamespace();
         final String cohortId = request.getCohortId();
         final CohortType cohortType = request.getCohortType();
 
         final List<Member> members = new ArrayList<>();
         try {
+            final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortMembersPath = cohortRootPath + "/" + cohortType + "/" + cohortId + "/members";
             if (serverProxy.exists(cohortMembersPath, false) == null) {
                 logger.warn("Failed to locate member tree {}", cohortMembersPath);
@@ -475,10 +556,12 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        final String namespace = request.getNamespace();
         final String cohortId = request.getCohortId();
         final CohortType cohortType = request.getCohortType();
         final String memberId = request.getMemberId();
         try {
+            final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortMembersPath = cohortRootPath + "/" + cohortType + "/" + cohortId + "/members";
             if (serverProxy.exists(cohortMembersPath, false) == null) {
                 logger.warn("Failed to locate member tree {}", cohortMembersPath);
@@ -514,9 +597,11 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        final String namespace = request.getNamespace();
         final String cohortId = request.getCohortId();
         final CohortType cohortType = request.getCohortType();
         try {
+            final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortPath = cohortRootPath + "/" + cohortType + "/" + cohortId;
             if (serverProxy.exists(cohortPath, false) == null) {
                 logger.warn("Failed to locate cohort {}", cohortPath);
@@ -561,8 +646,10 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        final String namespace = request.getNamespace();
         final CohortType cohortType = request.getCohortType();
         try {
+            final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortTypePath = cohortRootPath + "/" + cohortType;
             if (serverProxy.exists(cohortTypePath, false) == null) {
                 logger.warn("Failed to locate cohort type {}", cohortTypePath);

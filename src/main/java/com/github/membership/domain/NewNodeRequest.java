@@ -3,6 +3,7 @@ package com.github.membership.domain;
 import java.net.InetSocketAddress;
 
 public final class NewNodeRequest {
+    private String namespace;
     private String nodeId;
     private InetSocketAddress address;
 
@@ -22,8 +23,16 @@ public final class NewNodeRequest {
         this.address = address;
     }
 
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
     @Override
     public String toString() {
-        return "NewNodeRequest [nodeId=" + nodeId + ", address=" + address + "]";
+        return "NewNodeRequest [namespace=" + namespace + ", nodeId=" + nodeId + ", address=" + address + "]";
     }
 }

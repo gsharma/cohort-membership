@@ -1,6 +1,6 @@
 package com.github.membership.domain;
 
-public final class ListCohortsRequest {
+public final class NewNamespaceRequest {
     private String namespace;
 
     public String getNamespace() {
@@ -13,7 +13,7 @@ public final class ListCohortsRequest {
 
     @Override
     public String toString() {
-        return "ListCohortsRequest [namespace=" + namespace + "]";
+        return "NewNamespaceRequest [namespace=" + namespace + "]";
     }
 
 }

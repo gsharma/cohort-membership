@@ -1,6 +1,7 @@
 package com.github.membership.domain;
 
 public final class DescribeCohortRequest {
+    private String namespace;
     private String cohortId;
     private CohortType cohortType;
 
@@ -20,8 +21,16 @@ public final class DescribeCohortRequest {
         this.cohortType = cohortType;
     }
 
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
     @Override
     public String toString() {
-        return "DescribeCohortRequest [cohortId=" + cohortId + ", cohortType=" + cohortType + "]";
+        return "DescribeCohortRequest [namespace=" + namespace + ", cohortId=" + cohortId + ", cohortType=" + cohortType + "]";
     }
 }
