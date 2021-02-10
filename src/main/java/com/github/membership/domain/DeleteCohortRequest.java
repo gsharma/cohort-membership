@@ -1,6 +1,6 @@
-package com.github.membership.server;
+package com.github.membership.domain;
 
-public final class NewCohortRequest {
+public final class DeleteCohortRequest {
     private String cohortId;
     private CohortType cohortType;
 
@@ -22,7 +22,6 @@ public final class NewCohortRequest {
 
     @Override
     public String toString() {
-        return "NewCohortRequest [cohortId=" + cohortId + ", cohortType=" + cohortType + "]";
+        return "DeleteCohortRequest [cohortId=" + cohortId + ", cohortType=" + cohortType + "]";
     }
-
 }

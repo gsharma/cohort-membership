@@ -1,4 +1,4 @@
-package com.github.membership.server;
+package com.github.membership.domain;
 
 public final class JoinCohortResponse {
     private Member member;

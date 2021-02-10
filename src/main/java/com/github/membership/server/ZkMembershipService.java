@@ -24,6 +24,28 @@ import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooKeeper.States;
 
+import com.github.membership.domain.Cohort;
+import com.github.membership.domain.CohortType;
+import com.github.membership.domain.DeleteCohortRequest;
+import com.github.membership.domain.DeleteCohortResponse;
+import com.github.membership.domain.DeleteCohortTypeRequest;
+import com.github.membership.domain.DeleteCohortTypeResponse;
+import com.github.membership.domain.DescribeCohortRequest;
+import com.github.membership.domain.DescribeCohortResponse;
+import com.github.membership.domain.JoinCohortRequest;
+import com.github.membership.domain.JoinCohortResponse;
+import com.github.membership.domain.LeaveCohortRequest;
+import com.github.membership.domain.LeaveCohortResponse;
+import com.github.membership.domain.ListCohortsRequest;
+import com.github.membership.domain.ListCohortsResponse;
+import com.github.membership.domain.Member;
+import com.github.membership.domain.NewCohortRequest;
+import com.github.membership.domain.NewCohortResponse;
+import com.github.membership.domain.NewCohortTypeRequest;
+import com.github.membership.domain.NewCohortTypeResponse;
+import com.github.membership.domain.NewNodeRequest;
+import com.github.membership.domain.NewNodeResponse;
+import com.github.membership.domain.Node;
 import com.github.membership.server.MembershipServerException.Code;
 
 final class ZkMembershipService implements MembershipService {

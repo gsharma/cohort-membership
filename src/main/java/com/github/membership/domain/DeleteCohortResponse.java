@@ -1,9 +1,8 @@
-package com.github.membership.server;
+package com.github.membership.domain;
 
-public final class LeaveCohortResponse {
+public final class DeleteCohortResponse {
     private String cohortId;
     private CohortType cohortType;
-    private String memberId;
     private boolean success;
 
     public String getCohortId() {
@@ -22,14 +21,6 @@ public final class LeaveCohortResponse {
         this.cohortType = cohortType;
     }
 
-    public String getMemberId() {
-        return memberId;
-    }
-
-    public void setMemberId(String memberId) {
-        this.memberId = memberId;
-    }
-
     public boolean isSuccess() {
         return success;
     }
@@ -40,6 +31,6 @@ public final class LeaveCohortResponse {
 
     @Override
     public String toString() {
-        return "LeaveCohortResponse [cohortId=" + cohortId + ", cohortType=" + cohortType + ", memberId=" + memberId + ", success=" + success + "]";
+        return "DeleteCohortResponse [cohortId=" + cohortId + ", cohortType=" + cohortType + ", success=" + success + "]";
     }
 }

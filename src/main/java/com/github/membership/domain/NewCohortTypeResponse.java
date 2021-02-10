@@ -1,7 +1,8 @@
-package com.github.membership.server;
+package com.github.membership.domain;
 
-public final class DeleteCohortTypeResponse {
+public final class NewCohortTypeResponse {
     private CohortType cohortType;
+    private String path;
     private boolean success;
 
     public CohortType getCohortType() {
@@ -16,12 +17,21 @@ public final class DeleteCohortTypeResponse {
         return success;
     }
 
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
+    }
+
     public void setSuccess(boolean success) {
         this.success = success;
     }
 
     @Override
     public String toString() {
-        return "DeleteCohortTypeResponse [cohortType=" + cohortType + ", success=" + success + "]";
+        return "NewCohortTypeResponse [cohortType=" + cohortType + ", path=" + path + ", success=" + success + "]";
     }
+
 }

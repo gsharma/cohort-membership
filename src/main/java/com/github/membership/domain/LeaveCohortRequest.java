@@ -1,11 +1,9 @@
-package com.github.membership.server;
+package com.github.membership.domain;
 
-import java.util.List;
-
-public final class DescribeCohortResponse {
+public final class LeaveCohortRequest {
     private String cohortId;
     private CohortType cohortType;
-    private List<Member> members;
+    private String memberId;
 
     public String getCohortId() {
         return cohortId;
@@ -23,16 +21,16 @@ public final class DescribeCohortResponse {
         this.cohortType = cohortType;
     }
 
-    public List<Member> getMembers() {
-        return members;
+    public String getMemberId() {
+        return memberId;
     }
 
-    public void setMembers(List<Member> members) {
-        this.members = members;
+    public void setMemberId(String memberId) {
+        this.memberId = memberId;
     }
 
     @Override
     public String toString() {
-        return "DescribeCohortResponse [cohortId=" + cohortId + ", cohortType=" + cohortType + ", members=" + members + "]";
+        return "LeaveCohortRequest [cohortId=" + cohortId + ", cohortType=" + cohortType + ", memberId=" + memberId + "]";
     }
 }

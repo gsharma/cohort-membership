@@ -3,6 +3,24 @@ package com.github.membership.server;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+import com.github.membership.domain.DeleteCohortRequest;
+import com.github.membership.domain.DeleteCohortResponse;
+import com.github.membership.domain.DeleteCohortTypeRequest;
+import com.github.membership.domain.DeleteCohortTypeResponse;
+import com.github.membership.domain.DescribeCohortRequest;
+import com.github.membership.domain.DescribeCohortResponse;
+import com.github.membership.domain.JoinCohortRequest;
+import com.github.membership.domain.JoinCohortResponse;
+import com.github.membership.domain.LeaveCohortRequest;
+import com.github.membership.domain.LeaveCohortResponse;
+import com.github.membership.domain.ListCohortsRequest;
+import com.github.membership.domain.ListCohortsResponse;
+import com.github.membership.domain.NewCohortRequest;
+import com.github.membership.domain.NewCohortResponse;
+import com.github.membership.domain.NewCohortTypeRequest;
+import com.github.membership.domain.NewCohortTypeResponse;
+import com.github.membership.domain.NewNodeRequest;
+import com.github.membership.domain.NewNodeResponse;
 import com.github.membership.lib.Lifecycle;
 
 interface MembershipService extends Lifecycle {
@@ -26,7 +44,7 @@ interface MembershipService extends Lifecycle {
 
     DeleteCohortTypeResponse deleteCohortType(final DeleteCohortTypeRequest request) throws MembershipServerException;
 
-    static MembershipService getMembership(final List<InetSocketAddress> serverAddresses, final String namespace) {
+    static MembershipService getService(final List<InetSocketAddress> serverAddresses, final String namespace) {
         return new ZkMembershipService(serverAddresses, namespace);
     }
 

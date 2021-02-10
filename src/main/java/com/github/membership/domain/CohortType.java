@@ -1,4 +1,4 @@
-package com.github.membership.server;
+package com.github.membership.domain;
 
 public enum CohortType {
     ONE, TWO, THREE, FOUR;
