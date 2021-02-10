@@ -89,6 +89,11 @@ public final class CohortMembershipTest {
         assertEquals("/" + namespace + "/cohorts/" + newCohortRequestTwo.getCohortType().name() + "/" + cohortTwo.getId(), cohortTwo.getPath());
 
         logger.info("[step-7] list cohorts, check for cohortOne and cohortTwo");
+        final ListCohortsRequest listCohortsRequestOne = new ListCohortsRequest();
+        final ListCohortsResponse listCohortsResponseOne = membershipService.listCohorts(listCohortsRequestOne);
+        assertEquals(2, listCohortsResponseOne.getCohorts().size());
+        assertTrue(listCohortsResponseOne.getCohorts().contains(cohortOne));
+        assertTrue(listCohortsResponseOne.getCohorts().contains(cohortTwo));
 
         logger.info("[step-8] memberOne joins cohortOne");
         final JoinCohortRequest joinCohortRequestOne = new JoinCohortRequest();

@@ -315,7 +315,37 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
-        return null;
+
+        final List<Cohort> cohorts = new ArrayList<>();
+        try {
+            final List<String> cohortTypes = serverProxy.getChildren(cohortRootPath, false);
+            for (final String cohortType : cohortTypes) {
+                final String cohortTypePath = cohortRootPath + "/" + cohortType;
+                final List<String> cohortIds = serverProxy.getChildren(cohortTypePath, false);
+                for (final String cohortId : cohortIds) {
+                    final Cohort cohort = new Cohort();
+                    cohort.setId(cohortId);
+                    cohort.setPath(cohortTypePath + "/" + cohortId);
+                    cohort.setType(CohortType.fromString(cohortType));
+                    cohorts.add(cohort);
+                }
+            }
+        } catch (final KeeperException keeperException) {
+            if (keeperException instanceof KeeperException.NodeExistsException) {
+                // node already exists
+            } else {
+                // fix later
+                throw new MembershipServerException(Code.UNKNOWN_FAILURE, keeperException);
+            }
+        } catch (final InterruptedException interruptedException) {
+            // fix later
+            throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
+        }
+
+        final ListCohortsResponse response = new ListCohortsResponse();
+        response.setCohorts(cohorts);
+        logger.debug(response);
+        return response;
     }
 
     @Override
