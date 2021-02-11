@@ -27,6 +27,8 @@ import com.github.membership.domain.DeleteCohortRequest;
 import com.github.membership.domain.DeleteCohortResponse;
 import com.github.membership.domain.DeleteCohortTypeRequest;
 import com.github.membership.domain.DeleteCohortTypeResponse;
+import com.github.membership.domain.DeleteNodeRequest;
+import com.github.membership.domain.DeleteNodeResponse;
 import com.github.membership.domain.DescribeCohortRequest;
 import com.github.membership.domain.DescribeCohortResponse;
 import com.github.membership.domain.JoinCohortRequest;
@@ -57,9 +59,8 @@ public final class CohortMembershipTest {
 
     @Test
     public void testBasicJoin() throws Exception {
-        final String namespace = "test";
-
         logger.info("[step-1] create namespace");
+        final String namespace = "universe";
         final NewNamespaceRequest newNamespaceRequestOne = new NewNamespaceRequest();
         newNamespaceRequestOne.setNamespace(namespace);
         final NewNamespaceResponse newNamespaceResponseOne = membershipService.newNamespace(newNamespaceRequestOne);
@@ -234,8 +235,22 @@ public final class CohortMembershipTest {
         final DeleteCohortTypeResponse deleteCohortTypeResponseOne = membershipService.deleteCohortType(deleteCohortTypeRequestOne);
         assertEquals(cohortOne.getType(), deleteCohortTypeResponseOne.getCohortType());
         assertTrue(deleteCohortTypeResponseOne.isSuccess());
-        
-        logger.info("[step-18] purge namespace");
+
+        logger.info("[step-18] delete nodeOne");
+        final DeleteNodeRequest deleteNodeRequestOne = new DeleteNodeRequest();
+        deleteNodeRequestOne.setNamespace(namespace);
+        deleteNodeRequestOne.setNodeId(nodeOne.getId());
+        final DeleteNodeResponse deleteNodeResponseOne = membershipService.deleteNode(deleteNodeRequestOne);
+        assertTrue(deleteNodeResponseOne.isSuccess());
+
+        logger.info("[step-19] delete nodeTwo");
+        final DeleteNodeRequest deleteNodeRequestTwo = new DeleteNodeRequest();
+        deleteNodeRequestTwo.setNamespace(namespace);
+        deleteNodeRequestTwo.setNodeId(nodeTwo.getId());
+        final DeleteNodeResponse deleteNodeResponseTwo = membershipService.deleteNode(deleteNodeRequestTwo);
+        assertTrue(deleteNodeResponseTwo.isSuccess());
+
+        logger.info("[step-20] purge namespace");
         final PurgeNamespaceRequest purgeNamespaceRequestOne = new PurgeNamespaceRequest();
         purgeNamespaceRequestOne.setNamespace(namespace);
         final PurgeNamespaceResponse purgeNamespaceResponseOne = membershipService.purgeNamespace(purgeNamespaceRequestOne);

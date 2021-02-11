@@ -7,6 +7,8 @@ import com.github.membership.domain.DeleteCohortRequest;
 import com.github.membership.domain.DeleteCohortResponse;
 import com.github.membership.domain.DeleteCohortTypeRequest;
 import com.github.membership.domain.DeleteCohortTypeResponse;
+import com.github.membership.domain.DeleteNodeRequest;
+import com.github.membership.domain.DeleteNodeResponse;
 import com.github.membership.domain.DescribeCohortRequest;
 import com.github.membership.domain.DescribeCohortResponse;
 import com.github.membership.domain.JoinCohortRequest;
@@ -49,6 +51,8 @@ interface MembershipService extends Lifecycle {
     DeleteCohortResponse deleteCohort(final DeleteCohortRequest request) throws MembershipServerException;
 
     DeleteCohortTypeResponse deleteCohortType(final DeleteCohortTypeRequest request) throws MembershipServerException;
+
+    DeleteNodeResponse deleteNode(final DeleteNodeRequest request) throws MembershipServerException;
 
     PurgeNamespaceResponse purgeNamespace(final PurgeNamespaceRequest request) throws MembershipServerException;
 

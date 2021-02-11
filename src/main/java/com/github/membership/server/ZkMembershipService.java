@@ -30,6 +30,8 @@ import com.github.membership.domain.DeleteCohortRequest;
 import com.github.membership.domain.DeleteCohortResponse;
 import com.github.membership.domain.DeleteCohortTypeRequest;
 import com.github.membership.domain.DeleteCohortTypeResponse;
+import com.github.membership.domain.DeleteNodeRequest;
+import com.github.membership.domain.DeleteNodeResponse;
 import com.github.membership.domain.DescribeCohortRequest;
 import com.github.membership.domain.DescribeCohortResponse;
 import com.github.membership.domain.JoinCohortRequest;
@@ -608,7 +610,7 @@ final class ZkMembershipService implements MembershipService {
                 throw new MembershipServerException(Code.UNKNOWN_FAILURE);
             }
 
-            logger.info("Delete cohort {}", cohortPath);
+            logger.info("Deleting cohort {}", cohortPath);
             final List<String> childNodes = flattenTree(cohortPath);
             logger.debug(childNodes);
 
@@ -680,6 +682,46 @@ final class ZkMembershipService implements MembershipService {
 
         final DeleteCohortTypeResponse response = new DeleteCohortTypeResponse();
         response.setCohortType(cohortType);
+        response.setSuccess(true);
+        logger.debug(response);
+        return response;
+    }
+
+    @Override
+    public DeleteNodeResponse deleteNode(final DeleteNodeRequest request) throws MembershipServerException {
+        // TODO
+        logger.debug(request);
+        if (!isRunning()) {
+            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
+                    "Invalid attempt to operate an already stopped membership service");
+        }
+        final String namespace = request.getNamespace();
+        final String nodeId = request.getNodeId();
+        try {
+            final String nodeRootPath = "/" + namespace + "/nodes";
+            final String nodePath = nodeRootPath + "/" + nodeId;
+            if (serverProxy.exists(nodePath, false) == null) {
+                logger.warn("Failed to locate node {}", nodePath);
+                throw new MembershipServerException(Code.UNKNOWN_FAILURE);
+            }
+
+            logger.info("Deleting node {}", nodePath);
+            serverProxy.delete(nodePath, -1);
+        } catch (final KeeperException keeperException) {
+            if (keeperException instanceof KeeperException.NodeExistsException) {
+                // node already exists
+            } else {
+                // fix later
+                throw new MembershipServerException(Code.UNKNOWN_FAILURE, keeperException);
+            }
+        } catch (final InterruptedException interruptedException) {
+            // fix later
+            throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
+        }
+
+        final DeleteNodeResponse response = new DeleteNodeResponse();
+        response.setNamespace(namespace);
+        response.setNodeId(nodeId);
         response.setSuccess(true);
         logger.debug(response);
         return response;
