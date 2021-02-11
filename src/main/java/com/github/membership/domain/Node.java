@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 public final class Node {
     private String id;
     private InetSocketAddress address;
+    private NodePersona persona;
     private String path;
 
     public InetSocketAddress getAddress() {
@@ -31,8 +32,16 @@ public final class Node {
         this.path = path;
     }
 
+    public NodePersona getPersona() {
+        return persona;
+    }
+
+    public void setPersona(NodePersona persona) {
+        this.persona = persona;
+    }
+
     @Override
     public String toString() {
-        return "Node [id=" + id + ", address=" + address + ", path=" + path + "]";
+        return "Node [id=" + id + ", address=" + address + ", persona=" + persona + ", path=" + path + "]";
     }
 }

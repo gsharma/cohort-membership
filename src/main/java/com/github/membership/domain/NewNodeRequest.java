@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 public final class NewNodeRequest {
     private String namespace;
     private String nodeId;
+    private NodePersona persona;
     private InetSocketAddress address;
 
     public String getNodeId() {
@@ -31,8 +32,16 @@ public final class NewNodeRequest {
         this.namespace = namespace;
     }
 
+    public NodePersona getPersona() {
+        return persona;
+    }
+
+    public void setPersona(NodePersona persona) {
+        this.persona = persona;
+    }
+
     @Override
     public String toString() {
-        return "NewNodeRequest [namespace=" + namespace + ", nodeId=" + nodeId + ", address=" + address + "]";
+        return "NewNodeRequest [namespace=" + namespace + ", nodeId=" + nodeId + ", persona=" + persona + ", address=" + address + "]";
     }
 }

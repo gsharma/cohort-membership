@@ -47,6 +47,7 @@ import com.github.membership.domain.NewNamespaceResponse;
 import com.github.membership.domain.NewNodeRequest;
 import com.github.membership.domain.NewNodeResponse;
 import com.github.membership.domain.Node;
+import com.github.membership.domain.NodePersona;
 import com.github.membership.domain.PurgeNamespaceRequest;
 import com.github.membership.domain.PurgeNamespaceResponse;
 
@@ -71,6 +72,7 @@ public final class CohortMembershipTest {
         final NewNodeRequest newNodeRequestOne = new NewNodeRequest();
         newNodeRequestOne.setNamespace(namespace);
         newNodeRequestOne.setNodeId(UUID.randomUUID().toString());
+        newNodeRequestOne.setPersona(NodePersona.COMPUTE);
         final String serverHostOne = "localhost";
         final int serverPortOne = 8000;
         newNodeRequestOne.setAddress(new InetSocketAddress(serverHostOne, serverPortOne));
@@ -83,6 +85,7 @@ public final class CohortMembershipTest {
         final NewNodeRequest newNodeRequestTwo = new NewNodeRequest();
         newNodeRequestTwo.setNamespace(namespace);
         newNodeRequestTwo.setNodeId(UUID.randomUUID().toString());
+        newNodeRequestTwo.setPersona(NodePersona.DATA_COMPUTE);
         final String serverHostTwo = "localhost";
         final int serverPortTwo = 8001;
         newNodeRequestOne.setAddress(new InetSocketAddress(serverHostTwo, serverPortTwo));
