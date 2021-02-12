@@ -6,6 +6,11 @@ public final class LeaveCohortRequest {
     private CohortType cohortType;
     private String memberId;
 
+    public boolean validate() {
+        // TODO
+        return true;
+    }
+
     public String getCohortId() {
         return cohortId;
     }

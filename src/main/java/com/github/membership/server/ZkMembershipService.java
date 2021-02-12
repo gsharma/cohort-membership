@@ -54,6 +54,9 @@ import com.github.membership.domain.PurgeNamespaceRequest;
 import com.github.membership.domain.PurgeNamespaceResponse;
 import com.github.membership.server.MembershipServerException.Code;
 
+/**
+ * TODO: switch to using multi() where possible
+ */
 final class ZkMembershipService implements MembershipService {
     private static final Logger logger = LogManager.getLogger(ZkMembershipService.class.getSimpleName());
 
@@ -176,6 +179,9 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        }
         final String namespace = request.getNamespace();
         String namespacePath = "/" + namespace;
         try {
@@ -226,6 +232,9 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        }
         final String namespace = request.getNamespace();
         try {
             final String namespacePath = "/" + namespace;
@@ -264,6 +273,9 @@ final class ZkMembershipService implements MembershipService {
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
+        }
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
         }
         final String namespace = request.getNamespace();
         final CohortType cohortType = request.getCohortType();
@@ -304,6 +316,9 @@ final class ZkMembershipService implements MembershipService {
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
+        }
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
         }
         final String namespace = request.getNamespace();
         final String cohortId = request.getCohortId();
@@ -368,6 +383,9 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        }
         final String namespace = request.getNamespace();
         final String nodeId = request.getNodeId();
         final InetSocketAddress address = request.getAddress();
@@ -414,7 +432,9 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
-
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        }
         final String namespace = request.getNamespace();
         final List<Cohort> cohorts = new ArrayList<>();
         try {
@@ -457,11 +477,15 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        }
         final String namespace = request.getNamespace();
         final String memberId = request.getMemberId();
         final String cohortId = request.getCohortId();
         final CohortType cohortType = request.getCohortType();
         final String nodeId = request.getNodeId();
+
         String memberChildPath = null;
         try {
             final String cohortRootPath = "/" + namespace + "/cohorts";
@@ -507,6 +531,9 @@ final class ZkMembershipService implements MembershipService {
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
+        }
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
         }
         final String namespace = request.getNamespace();
         final String cohortId = request.getCohortId();
@@ -558,6 +585,9 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        }
         final String namespace = request.getNamespace();
         final String cohortId = request.getCohortId();
         final CohortType cohortType = request.getCohortType();
@@ -598,6 +628,9 @@ final class ZkMembershipService implements MembershipService {
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
+        }
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
         }
         final String namespace = request.getNamespace();
         final String cohortId = request.getCohortId();
@@ -648,6 +681,9 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
         }
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        }
         final String namespace = request.getNamespace();
         final CohortType cohortType = request.getCohortType();
         try {
@@ -694,6 +730,9 @@ final class ZkMembershipService implements MembershipService {
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
+        }
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
         }
         final String namespace = request.getNamespace();
         final String nodeId = request.getNodeId();

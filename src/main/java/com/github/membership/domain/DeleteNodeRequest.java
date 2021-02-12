@@ -4,6 +4,11 @@ public final class DeleteNodeRequest {
     private String namespace;
     private String nodeId;
 
+    public boolean validate() {
+        // TODO
+        return true;
+    }
+
     public String getNamespace() {
         return namespace;
     }

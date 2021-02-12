@@ -7,6 +7,11 @@ public final class JoinCohortRequest {
     private String cohortId;
     private String memberId;
 
+    public boolean validate() {
+        return namespace != null && !namespace.trim().isEmpty() && nodeId != null && !nodeId.trim().isEmpty() && cohortType != null
+                && cohortId != null && !cohortId.trim().isEmpty() && memberId != null && !memberId.trim().isEmpty();
+    }
+
     public String getNodeId() {
         return nodeId;
     }

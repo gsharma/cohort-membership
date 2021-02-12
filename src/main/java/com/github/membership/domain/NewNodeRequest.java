@@ -8,6 +8,11 @@ public final class NewNodeRequest {
     private NodePersona persona;
     private InetSocketAddress address;
 
+    public boolean validate() {
+        // TODO
+        return true;
+    }
+
     public String getNodeId() {
         return nodeId;
     }

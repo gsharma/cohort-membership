@@ -4,6 +4,11 @@ public final class NewCohortTypeRequest {
     private String namespace;
     private CohortType cohortType;
 
+    public boolean validate() {
+        // TODO
+        return true;
+    }
+
     public CohortType getCohortType() {
         return cohortType;
     }

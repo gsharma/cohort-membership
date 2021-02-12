@@ -3,6 +3,11 @@ package com.github.membership.domain;
 public final class NewNamespaceRequest {
     private String namespace;
 
+    public boolean validate() {
+        // TODO
+        return true;
+    }
+
     public String getNamespace() {
         return namespace;
     }

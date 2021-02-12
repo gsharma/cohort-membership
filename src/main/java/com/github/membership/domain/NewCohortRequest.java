@@ -5,6 +5,11 @@ public final class NewCohortRequest {
     private String cohortId;
     private CohortType cohortType;
 
+    public boolean validate() {
+        // TODO
+        return true;
+    }
+
     public String getCohortId() {
         return cohortId;
     }

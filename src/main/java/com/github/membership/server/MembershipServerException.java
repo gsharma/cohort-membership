@@ -34,6 +34,8 @@ final class MembershipServerException extends Exception {
         MEMBERSHIP_INIT_FAILURE("Failed to initialize membership service"),
         // 3.
         MEMBERSHIP_TINI_FAILURE("Failed to cleanly shutdown membership service"),
+        // 4.
+        REQUEST_VALIDATION_FAILURE("Membership service received an invalid request"),
         // n.
         UNKNOWN_FAILURE(
                 "Membership service internal failure. Check exception stacktrace for more details of the failure");
