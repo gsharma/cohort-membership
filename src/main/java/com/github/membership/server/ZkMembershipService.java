@@ -491,8 +491,9 @@ final class ZkMembershipService implements MembershipService {
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortMembersPath = cohortRootPath + "/" + cohortType + "/" + cohortId + "/members";
             if (serverProxy.exists(cohortMembersPath, false) == null) {
-                logger.warn("Failed to locate member tree {}", cohortMembersPath);
-                throw new MembershipServerException(Code.UNKNOWN_FAILURE);
+                final String warning = "Failed to locate member tree " + cohortMembersPath;
+                logger.warn(warning);
+                throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
             }
             memberChildPath = cohortMembersPath + "/" + memberId;
             logger.info("Creating member {}", memberChildPath);
@@ -544,8 +545,9 @@ final class ZkMembershipService implements MembershipService {
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortMembersPath = cohortRootPath + "/" + cohortType + "/" + cohortId + "/members";
             if (serverProxy.exists(cohortMembersPath, false) == null) {
-                logger.warn("Failed to locate member tree {}", cohortMembersPath);
-                throw new MembershipServerException(Code.UNKNOWN_FAILURE);
+                final String warning = "Failed to locate member tree " + cohortMembersPath;
+                logger.warn(warning);
+                throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
             }
             final List<String> memberIds = serverProxy.getChildren(cohortMembersPath, false);
             for (final String memberId : memberIds) {
@@ -596,8 +598,9 @@ final class ZkMembershipService implements MembershipService {
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortMembersPath = cohortRootPath + "/" + cohortType + "/" + cohortId + "/members";
             if (serverProxy.exists(cohortMembersPath, false) == null) {
-                logger.warn("Failed to locate member tree {}", cohortMembersPath);
-                throw new MembershipServerException(Code.UNKNOWN_FAILURE);
+                final String warning = "Failed to locate member tree " + cohortMembersPath;
+                logger.warn(warning);
+                throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
             }
             serverProxy.delete(cohortMembersPath + "/" + memberId, -1);
         } catch (final KeeperException keeperException) {
@@ -639,8 +642,9 @@ final class ZkMembershipService implements MembershipService {
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortPath = cohortRootPath + "/" + cohortType + "/" + cohortId;
             if (serverProxy.exists(cohortPath, false) == null) {
-                logger.warn("Failed to locate cohort {}", cohortPath);
-                throw new MembershipServerException(Code.UNKNOWN_FAILURE);
+                final String warning = "Failed to locate cohort " + cohortPath;
+                logger.warn(warning);
+                throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
             }
 
             logger.info("Deleting cohort {}", cohortPath);
@@ -690,8 +694,9 @@ final class ZkMembershipService implements MembershipService {
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortTypePath = cohortRootPath + "/" + cohortType;
             if (serverProxy.exists(cohortTypePath, false) == null) {
-                logger.warn("Failed to locate cohort type {}", cohortTypePath);
-                throw new MembershipServerException(Code.UNKNOWN_FAILURE);
+                final String warning = "Failed to locate cohort type " + cohortTypePath;
+                logger.warn(warning);
+                throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
             }
 
             logger.info("Delete cohortType {}", cohortTypePath);
@@ -740,8 +745,9 @@ final class ZkMembershipService implements MembershipService {
             final String nodeRootPath = "/" + namespace + "/nodes";
             final String nodePath = nodeRootPath + "/" + nodeId;
             if (serverProxy.exists(nodePath, false) == null) {
-                logger.warn("Failed to locate node {}", nodePath);
-                throw new MembershipServerException(Code.UNKNOWN_FAILURE);
+                final String warning = "Failed to locate node " + nodePath;
+                logger.warn(warning);
+                throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
             }
 
             logger.info("Deleting node {}", nodePath);

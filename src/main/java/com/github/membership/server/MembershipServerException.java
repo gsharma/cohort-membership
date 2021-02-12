@@ -36,6 +36,8 @@ final class MembershipServerException extends Exception {
         MEMBERSHIP_TINI_FAILURE("Failed to cleanly shutdown membership service"),
         // 4.
         REQUEST_VALIDATION_FAILURE("Membership service received an invalid request"),
+        // 5.
+        PARENT_LOCATOR_FAILURE("Membership service failed to locate parent entity"),
         // n.
         UNKNOWN_FAILURE(
                 "Membership service internal failure. Check exception stacktrace for more details of the failure");
