@@ -56,6 +56,10 @@ interface MembershipService extends Lifecycle {
 
     PurgeNamespaceResponse purgeNamespace(final PurgeNamespaceRequest request) throws MembershipServerException;
 
+    // AcquireLockResponse acquireLock(final AcquireLockRequest request) throws MembershipServerException;
+
+    // ReleaseLockResponse releaseLock(final ReleaseLockRequest request) throws MembershipServerException;
+
     static MembershipService getService(final List<InetSocketAddress> serverAddresses) {
         return new ZkMembershipService(serverAddresses);
     }
