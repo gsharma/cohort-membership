@@ -61,8 +61,8 @@ interface MembershipService extends Lifecycle {
 
     // ReleaseLockResponse releaseLock(final ReleaseLockRequest request) throws MembershipServerException;
 
-    static MembershipService getService(final String connectString) {
-        return new ZkMembershipService(connectString);
+    static MembershipService getService(final MembershipServiceConfiguration configuration) {
+        return new ZkMembershipService(configuration);
     }
 
 }

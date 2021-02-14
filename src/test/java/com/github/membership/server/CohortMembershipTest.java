@@ -54,6 +54,9 @@ import com.github.membership.domain.NodePersona;
 import com.github.membership.domain.PurgeNamespaceRequest;
 import com.github.membership.domain.PurgeNamespaceResponse;
 
+/**
+ * Tests to maintain the sanity of MembershipService.
+ */
 public final class CohortMembershipTest {
     private static final Logger logger = LogManager.getLogger(CohortMembershipTest.class.getSimpleName());
 
@@ -64,7 +67,9 @@ public final class CohortMembershipTest {
     public void testBasicJoin() throws Exception {
         MembershipService membershipService = null;
         try {
-            membershipService = MembershipService.getService(testingCluster.getConnectString());
+            final MembershipServiceConfiguration configuration = new MembershipServiceConfiguration();
+            configuration.setConnectString(testingCluster.getConnectString());
+            membershipService = MembershipService.getService(configuration);
             membershipService.start();
             assertTrue(membershipService.isRunning());
 
@@ -280,11 +285,14 @@ public final class CohortMembershipTest {
         MembershipService membershipServiceOne = null;
         MembershipService membershipServiceTwo = null;
         try {
-            membershipServiceOne = MembershipService.getService(testingCluster.getConnectString());
+            final MembershipServiceConfiguration configuration = new MembershipServiceConfiguration();
+            configuration.setConnectString(testingCluster.getConnectString());
+
+            membershipServiceOne = MembershipService.getService(configuration);
             membershipServiceOne.start();
             assertTrue(membershipServiceOne.isRunning());
 
-            membershipServiceTwo = MembershipService.getService(testingCluster.getConnectString());
+            membershipServiceTwo = MembershipService.getService(configuration);
             membershipServiceTwo.start();
             assertTrue(membershipServiceTwo.isRunning());
 
@@ -439,7 +447,9 @@ public final class CohortMembershipTest {
     @Test
     public void testMembershipServiceLCM() throws Exception {
         for (int iter = 0; iter < 3; iter++) {
-            MembershipService membershipService = MembershipService.getService(testingCluster.getConnectString());
+            final MembershipServiceConfiguration configuration = new MembershipServiceConfiguration();
+            configuration.setConnectString(testingCluster.getConnectString());
+            final MembershipService membershipService = MembershipService.getService(configuration);
             membershipService.start();
             assertTrue(membershipService.isRunning());
 

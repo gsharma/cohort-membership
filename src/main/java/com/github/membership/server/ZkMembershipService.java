@@ -64,26 +64,24 @@ import com.github.membership.server.MembershipServerException.Code;
 final class ZkMembershipService implements MembershipService {
     private static final Logger logger = LogManager.getLogger(ZkMembershipService.class.getSimpleName());
 
-    private String identity;
-
+    private final MembershipServiceConfiguration configuration;
     private final AtomicBoolean running;
     private final AtomicBoolean ready;
 
-    // private final List<InetSocketAddress> serverAddresses;
-    private String connectString;
+    private String identity;
 
     private ZooKeeper serverProxy;
     private long serverSessionId;
 
     private Set<String> trackedNamespaces;
 
-    ZkMembershipService(final String connectString) {
+    ZkMembershipService(final MembershipServiceConfiguration configuration) {
         this.running = new AtomicBoolean(false);
         this.ready = new AtomicBoolean(false);
 
         // this.serverAddresses = new ArrayList<>();
         // this.serverAddresses.addAll(serverAddresses);
-        this.connectString = connectString;
+        this.configuration = configuration;
 
         this.trackedNamespaces = new CopyOnWriteArraySet<>();
     }
@@ -123,6 +121,7 @@ final class ZkMembershipService implements MembershipService {
                 }
             };
             try {
+                final String connectString = configuration.getConnectString();
                 serverProxy = new ZooKeeper(connectString, sessionTimeoutMillis, watcher);
                 logger.debug("Server proxy connection state:{}", serverProxy.getState());
                 transitionedToConnected.await();
