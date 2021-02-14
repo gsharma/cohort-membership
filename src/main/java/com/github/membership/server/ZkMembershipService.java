@@ -518,10 +518,12 @@ final class ZkMembershipService implements MembershipService {
                 final List<String> cohortIds = serverProxy.getChildren(cohortTypePath, false, cohortTypeStat);
                 logger.debug("cohort type:{}, stat:{}", cohortTypePath, cohortTypeStat);
                 for (final String cohortId : cohortIds) {
-                    final Cohort cohort = new Cohort();
-                    cohort.setId(cohortId);
-                    cohort.setPath(cohortTypePath + "/" + cohortId);
-                    cohort.setType(CohortType.fromString(cohortType));
+                    final DescribeCohortRequest describeCohortRequest = new DescribeCohortRequest();
+                    describeCohortRequest.setNamespace(namespace);
+                    describeCohortRequest.setCohortId(cohortId);
+                    describeCohortRequest.setCohortType(CohortType.fromString(cohortType));
+                    final DescribeCohortResponse describeCohortResponse = describeCohort(describeCohortRequest);
+                    final Cohort cohort = describeCohortResponse.getCohort();
                     cohorts.add(cohort);
                 }
             }

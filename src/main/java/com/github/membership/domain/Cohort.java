@@ -42,7 +42,6 @@ public final class Cohort {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((id == null) ? 0 : id.hashCode());
-        result = prime * result + ((members == null) ? 0 : members.hashCode());
         result = prime * result + ((path == null) ? 0 : path.hashCode());
         result = prime * result + ((type == null) ? 0 : type.hashCode());
         return result;
@@ -62,13 +61,6 @@ public final class Cohort {
                 return false;
             }
         } else if (!id.equals(other.id)) {
-            return false;
-        }
-        if (members == null) {
-            if (other.members != null) {
-                return false;
-            }
-        } else if (!members.equals(other.members)) {
             return false;
         }
         if (path == null) {
