@@ -114,9 +114,11 @@ final class ZkMembershipService implements MembershipService {
                             transitionedToConnected.countDown();
                             break;
                         case Expired:
-                            logger.info("Proxy session expired, watchedEvent: {}", watchedEvent);
+                            // TODO: handle session expiration
+                            logger.info("Proxy session expired, {}", watchedEvent);
                             break;
                         default:
+                            logger.info("Proxy encountered {}", watchedEvent);
                             break;
                     }
                 }
@@ -198,21 +200,21 @@ final class ZkMembershipService implements MembershipService {
                 namespacePath = serverProxy.create(namespacePath, null,
                         ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, namespaceStat);
                 logger.debug("namespace:{}, stat:{}", namespacePath, namespaceStat);
-                logger.info("Created namespace:{}", namespacePath);
+                logger.info("Created namespace:{}, zxid:{}", namespacePath, namespaceStat.getCzxid());
 
                 // create cohorts root node
                 final Stat cohortRootStat = new Stat();
                 final String cohortRootPath = serverProxy.create(namespacePath + "/cohorts", null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
                         CreateMode.PERSISTENT, cohortRootStat);
                 logger.debug("cohorts root:{}, stat:{}", cohortRootPath, cohortRootStat);
-                logger.info("Created cohorts root:{}", cohortRootPath);
+                logger.info("Created cohorts root:{}, zxid:{}", cohortRootPath, cohortRootStat.getCzxid());
 
                 // create nodes root node
                 final Stat nodeRootStat = new Stat();
                 final String nodeRootPath = serverProxy.create(namespacePath + "/nodes", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT,
                         nodeRootStat);
                 logger.debug("nodes root:{}, stat:{}", nodeRootPath, nodeRootStat);
-                logger.info("Created nodes root:{}", nodeRootPath);
+                logger.info("Created nodes root:{}, zxid:{}", nodeRootPath, nodeRootStat.getCzxid());
 
                 trackedNamespaces.add(namespace);
             } else {
@@ -256,8 +258,8 @@ final class ZkMembershipService implements MembershipService {
             // start with leaves, work up from there
             for (int iter = childNodes.size() - 1; iter >= 0; iter--) {
                 final String path = childNodes.get(iter);
-                logger.info("Deleting {}", path);
                 serverProxy.delete(path, -1);
+                logger.info("Deleted {}", path);
             }
             trackedNamespaces.remove(namespace);
             logger.info("Purged namespace {}", namespacePath);
@@ -301,7 +303,7 @@ final class ZkMembershipService implements MembershipService {
                 cohortTypePath = serverProxy.create(cohortTypePath, null,
                         ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, cohortTypeStat);
                 logger.debug("cohort type:{}, stat:{}", cohortTypePath, cohortTypeStat);
-                logger.info("Created cohort type {}", cohortTypePath);
+                logger.info("Created cohort type:{}, zxid:{}", cohortTypePath, cohortTypeStat.getCzxid());
             } else {
                 logger.warn("Cohort type tree already exsts {}", cohortTypePath);
             }
@@ -353,7 +355,7 @@ final class ZkMembershipService implements MembershipService {
                 cohortChildPath = serverProxy.create(cohortChildPath, null,
                         ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, cohortStat);
                 logger.debug("cohort:{}, stat:{}", cohortChildPath, cohortStat);
-                logger.info("Created cohort {}", cohortChildPath);
+                logger.info("Created cohort:{}, zxid:{}", cohortChildPath, cohortStat.getCzxid());
 
                 // for debugging
                 // if (serverProxy.exists(cohortChildPath, false) == null) {
@@ -366,12 +368,37 @@ final class ZkMembershipService implements MembershipService {
                 membersChildPath = serverProxy.create(membersChildPath, null,
                         ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, membersChildStat);
                 logger.debug("members root:{}, stat:{}", membersChildPath, membersChildStat);
-                logger.info("Created members root {}", membersChildPath);
+                logger.info("Created members root:{}, zxid:{}", membersChildPath, membersChildStat.getCzxid());
 
                 // for debugging
                 // if (serverProxy.exists(membersChildPath, false) == null) {
                 // logger.warn("Failed to create members root {}", membersChildPath);
                 // }
+
+                final Watcher membershipChangedWatcher = new Watcher() {
+                    @Override
+                    public void process(final WatchedEvent watchedEvent) {
+                        logger.debug("Membership changed, {}", watchedEvent);
+                        switch (watchedEvent.getType()) {
+                            case NodeCreated:
+                                logger.info("Member added, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                break;
+                            case NodeDeleted:
+                                logger.info("Member left or died, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                break;
+                            case NodeDataChanged:
+                                logger.info("Member data changed, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                break;
+                            case NodeChildrenChanged:
+                                logger.info("Membership changed, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                break;
+                            default:
+                                logger.info("Membership change triggered, sessionId:{}, {}", serverSessionId, watchedEvent);
+                                break;
+                        }
+                    }
+                };
+                serverProxy.getChildren(membersChildPath, membershipChangedWatcher);
             } else {
                 logger.warn("Failed to locate cohort child tree {}", cohortChildPath);
             }
@@ -472,7 +499,32 @@ final class ZkMembershipService implements MembershipService {
                 node.setId(nodeId);
                 node.setAddress(address);
                 node.setPath(nodeChildPath);
-                logger.info("Created {}", node);
+                logger.info("Created {}, zxid:{}", node, nodeStat.getCzxid());
+
+                final Watcher nodeChangedWatcher = new Watcher() {
+                    @Override
+                    public void process(final WatchedEvent watchedEvent) {
+                        logger.debug("Node changed, {}", watchedEvent);
+                        switch (watchedEvent.getType()) {
+                            case NodeCreated:
+                                logger.info("Node added, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                break;
+                            case NodeDeleted:
+                                logger.info("Node left or died, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                break;
+                            case NodeDataChanged:
+                                logger.info("Node data changed, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                break;
+                            case NodeChildrenChanged:
+                                logger.info("Node changed, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                break;
+                            default:
+                                logger.info("Node change triggered, sessionId:{}, {}", serverSessionId, watchedEvent);
+                                break;
+                        }
+                    }
+                };
+                serverProxy.getChildren(nodeRootPath, nodeChangedWatcher);
             } else {
                 logger.warn("Failed to locate node tree {}", nodeChildPath);
             }
@@ -585,7 +637,33 @@ final class ZkMembershipService implements MembershipService {
             member.setCohortId(cohortId);
             member.setNodeId(nodeId);
             member.setPath(memberChildPath);
-            logger.info("Created {}", member);
+            logger.info("Created {}, zxid:{}", member, memberStat.getCzxid());
+
+            final Watcher membershipChangedWatcher = new Watcher() {
+                @Override
+                public void process(final WatchedEvent watchedEvent) {
+                    // logger.info("Membership changed, {}", watchedEvent);
+                    switch (watchedEvent.getType()) {
+                        case NodeCreated:
+                            logger.info("Member added, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                            break;
+                        case NodeDeleted:
+                            logger.info("Member left or died, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                            break;
+                        case NodeDataChanged:
+                            logger.info("Member data changed, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                            break;
+                        case NodeChildrenChanged:
+                            logger.info("Membership changed, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                            break;
+                        default:
+                            logger.info("Membership change triggered, sessionId:{}, {}", serverSessionId, watchedEvent);
+                            break;
+                    }
+                }
+            };
+            // serverProxy.exists(memberChildPath, membershipChangedWatcher);
+            // serverProxy.getChildren(cohortMembersPath, membershipChangedWatcher);
 
             final DescribeCohortRequest describeCohortRequest = new DescribeCohortRequest();
             describeCohortRequest.setNamespace(namespace);

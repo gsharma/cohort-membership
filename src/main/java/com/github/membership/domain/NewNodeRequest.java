@@ -1,7 +1,5 @@
 package com.github.membership.domain;
 
-import java.net.InetSocketAddress;
-
 public final class NewNodeRequest {
     private String namespace;
     private String nodeId;
