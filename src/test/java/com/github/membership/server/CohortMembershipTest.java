@@ -15,6 +15,7 @@ import java.util.UUID;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.TestingServer;
+import org.apache.curator.test.TestingZooKeeperServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -467,6 +468,13 @@ public final class CohortMembershipTest {
         // testingCluster = new TestingCluster(instanceSpecs);
         testingCluster = new TestingCluster(3);
         testingCluster.start();
+
+        final List<TestingZooKeeperServer> testServers = testingCluster.getServers();
+        assertEquals(3, testServers.size());
+        for (final TestingZooKeeperServer testServer : testServers) {
+            assertTrue(testServer.getQuorumPeer().isRunning());
+            // logger.info(testServer.getQuorumPeer());
+        }
         logger.info("Started testCluster {}", testingCluster.getConnectString());
     }
 

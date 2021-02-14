@@ -57,6 +57,8 @@ import com.github.membership.domain.PurgeNamespaceResponse;
 import com.github.membership.server.MembershipServerException.Code;
 
 /**
+ * A Zookeeper-backed Cohort Membership Service.
+ * 
  * TODO: switch to using multi() where possible
  */
 final class ZkMembershipService implements MembershipService {
