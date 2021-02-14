@@ -1,19 +1,19 @@
 package com.github.membership.domain;
 
 public final class JoinCohortResponse {
-    private Member member;
+    private Cohort cohort;
 
-    public Member getMember() {
-        return member;
+    public Cohort getCohort() {
+        return cohort;
     }
 
-    public void setMember(Member member) {
-        this.member = member;
+    public void setCohort(Cohort cohort) {
+        this.cohort = cohort;
     }
 
     @Override
     public String toString() {
-        return "JoinCohortResponse [member=" + member + "]";
+        return "JoinCohortResponse [cohort=" + cohort + "]";
     }
 
 }

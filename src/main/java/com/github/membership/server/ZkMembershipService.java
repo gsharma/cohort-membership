@@ -23,6 +23,7 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooKeeper.States;
+import org.apache.zookeeper.data.Stat;
 
 import com.github.membership.domain.Cohort;
 import com.github.membership.domain.CohortType;
@@ -179,7 +180,6 @@ final class ZkMembershipService implements MembershipService {
 
     @Override
     public NewNamespaceResponse newNamespace(final NewNamespaceRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -193,17 +193,25 @@ final class ZkMembershipService implements MembershipService {
         try {
             // create namespace node
             if (serverProxy.exists(namespacePath, false) == null) {
-                logger.info("Creating namespace {}", namespacePath);
+                logger.debug("Creating namespace {}", namespacePath);
+                final Stat namespaceStat = new Stat();
                 namespacePath = serverProxy.create(namespacePath, null,
-                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, namespaceStat);
+                logger.debug("namespace:{}, stat:{}", namespacePath, namespaceStat);
+                logger.info("Created namespace:{}", namespacePath);
 
                 // create cohorts root node
+                final Stat cohortRootStat = new Stat();
                 final String cohortRootPath = serverProxy.create(namespacePath + "/cohorts", null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                        CreateMode.PERSISTENT);
+                        CreateMode.PERSISTENT, cohortRootStat);
+                logger.debug("cohorts root:{}, stat:{}", cohortRootPath, cohortRootStat);
                 logger.info("Created cohorts root:{}", cohortRootPath);
 
                 // create nodes root node
-                final String nodeRootPath = serverProxy.create(namespacePath + "/nodes", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                final Stat nodeRootStat = new Stat();
+                final String nodeRootPath = serverProxy.create(namespacePath + "/nodes", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT,
+                        nodeRootStat);
+                logger.debug("nodes root:{}, stat:{}", nodeRootPath, nodeRootStat);
                 logger.info("Created nodes root:{}", nodeRootPath);
 
                 trackedNamespaces.add(namespace);
@@ -232,7 +240,6 @@ final class ZkMembershipService implements MembershipService {
 
     @Override
     public PurgeNamespaceResponse purgeNamespace(final PurgeNamespaceRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -244,6 +251,7 @@ final class ZkMembershipService implements MembershipService {
         final String namespace = request.getNamespace();
         try {
             final String namespacePath = "/" + namespace;
+            logger.debug("Purging namespace {}", namespacePath);
             final List<String> childNodes = flattenTree(namespacePath);
             // start with leaves, work up from there
             for (int iter = childNodes.size() - 1; iter >= 0; iter--) {
@@ -251,8 +259,8 @@ final class ZkMembershipService implements MembershipService {
                 logger.info("Deleting {}", path);
                 serverProxy.delete(path, -1);
             }
-
             trackedNamespaces.remove(namespace);
+            logger.info("Purged namespace {}", namespacePath);
         } catch (final KeeperException keeperException) {
             if (keeperException instanceof KeeperException.NodeExistsException) {
                 // node already exists
@@ -274,7 +282,6 @@ final class ZkMembershipService implements MembershipService {
 
     @Override
     public NewCohortTypeResponse newCohortType(final NewCohortTypeRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -289,9 +296,12 @@ final class ZkMembershipService implements MembershipService {
         String cohortTypePath = cohortRootPath + "/" + cohortType;
         try {
             if (serverProxy.exists(cohortTypePath, false) == null) {
-                logger.info("Creating cohort type {}", cohortTypePath);
+                logger.debug("Creating cohort type {}", cohortTypePath);
+                final Stat cohortTypeStat = new Stat();
                 cohortTypePath = serverProxy.create(cohortTypePath, null,
-                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, cohortTypeStat);
+                logger.debug("cohort type:{}, stat:{}", cohortTypePath, cohortTypeStat);
+                logger.info("Created cohort type {}", cohortTypePath);
             } else {
                 logger.warn("Cohort type tree already exsts {}", cohortTypePath);
             }
@@ -317,7 +327,6 @@ final class ZkMembershipService implements MembershipService {
 
     @Override
     public NewCohortResponse newCohort(final NewCohortRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -339,22 +348,30 @@ final class ZkMembershipService implements MembershipService {
             }
             cohortChildPath = cohortTypePath + "/" + cohortId;
             if (serverProxy.exists(cohortChildPath, false) == null) {
-                logger.info("Creating cohort {}", cohortChildPath);
+                logger.debug("Creating cohort {}", cohortChildPath);
+                final Stat cohortStat = new Stat();
                 cohortChildPath = serverProxy.create(cohortChildPath, null,
-                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-                // optional for debugging
-                if (serverProxy.exists(cohortChildPath, false) == null) {
-                    logger.warn("Failed to create cohort {}", cohortChildPath);
-                }
+                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, cohortStat);
+                logger.debug("cohort:{}, stat:{}", cohortChildPath, cohortStat);
+                logger.info("Created cohort {}", cohortChildPath);
+
+                // for debugging
+                // if (serverProxy.exists(cohortChildPath, false) == null) {
+                // logger.warn("Failed to create cohort {}", cohortChildPath);
+                // }
 
                 String membersChildPath = cohortChildPath + "/members";
                 logger.debug("Creating members root {}", membersChildPath);
+                final Stat membersChildStat = new Stat();
                 membersChildPath = serverProxy.create(membersChildPath, null,
-                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-                // optional for debugging
-                if (serverProxy.exists(membersChildPath, false) == null) {
-                    logger.warn("Failed to create members root {}", membersChildPath);
-                }
+                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, membersChildStat);
+                logger.debug("members root:{}, stat:{}", membersChildPath, membersChildStat);
+                logger.info("Created members root {}", membersChildPath);
+
+                // for debugging
+                // if (serverProxy.exists(membersChildPath, false) == null) {
+                // logger.warn("Failed to create members root {}", membersChildPath);
+                // }
             } else {
                 logger.warn("Failed to locate cohort child tree {}", cohortChildPath);
             }
@@ -383,7 +400,6 @@ final class ZkMembershipService implements MembershipService {
 
     @Override
     public ListNodesResponse listNodes(final ListNodesRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -396,7 +412,10 @@ final class ZkMembershipService implements MembershipService {
         final List<Node> nodes = new ArrayList<>();
         try {
             final String nodeRootPath = "/" + namespace + "/nodes";
-            final List<String> nodeIds = serverProxy.getChildren(nodeRootPath, false);
+            logger.debug("List nodes under: {}", nodeRootPath);
+            final Stat nodeRootStat = new Stat();
+            final List<String> nodeIds = serverProxy.getChildren(nodeRootPath, false, nodeRootStat);
+            logger.debug("node root:{}, stat:{}", nodeRootPath, nodeRootStat);
             for (final String nodeId : nodeIds) {
                 final Node node = new Node();
                 node.setId(nodeId);
@@ -426,7 +445,6 @@ final class ZkMembershipService implements MembershipService {
 
     @Override
     public NewNodeResponse newNode(final NewNodeRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -437,16 +455,24 @@ final class ZkMembershipService implements MembershipService {
         }
         final String namespace = request.getNamespace();
         final String nodeId = request.getNodeId();
-        final InetSocketAddress address = request.getAddress();
-        String nodeChildPath = null;
+        final String address = request.getAddress();
+        Node node = null;
         try {
             final String nodeRootPath = "/" + namespace + "/nodes";
-            nodeChildPath = nodeRootPath + "/" + nodeId;
+            String nodeChildPath = nodeRootPath + "/" + nodeId;
             if (serverProxy.exists(nodeChildPath, false) == null) {
-                logger.info("Creating node {}", nodeChildPath);
+                logger.debug("Creating node {}", nodeChildPath);
+                final Stat nodeStat = new Stat();
                 // TODO: save data in znode
                 nodeChildPath = serverProxy.create(nodeChildPath, null,
-                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL, nodeStat);
+                logger.debug("node:{}, stat:{}", nodeChildPath, nodeStat);
+
+                node = new Node();
+                node.setId(nodeId);
+                node.setAddress(address);
+                node.setPath(nodeChildPath);
+                logger.info("Created {}", node);
             } else {
                 logger.warn("Failed to locate node tree {}", nodeChildPath);
             }
@@ -462,11 +488,6 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
 
-        final Node node = new Node();
-        node.setId(nodeId);
-        node.setAddress(address);
-        node.setPath(nodeChildPath);
-
         final NewNodeResponse response = new NewNodeResponse();
         response.setNode(node);
         logger.debug(response);
@@ -475,7 +496,6 @@ final class ZkMembershipService implements MembershipService {
 
     @Override
     public ListCohortsResponse listCohorts(final ListCohortsRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -488,10 +508,15 @@ final class ZkMembershipService implements MembershipService {
         final List<Cohort> cohorts = new ArrayList<>();
         try {
             final String cohortRootPath = "/" + namespace + "/cohorts";
-            final List<String> cohortTypes = serverProxy.getChildren(cohortRootPath, false);
+            logger.debug("List cohorts under {}", cohortRootPath);
+            final Stat cohortRootStat = new Stat();
+            final List<String> cohortTypes = serverProxy.getChildren(cohortRootPath, false, cohortRootStat);
+            logger.debug("cohort root:{}, stat:{}", cohortRootPath, cohortRootStat);
             for (final String cohortType : cohortTypes) {
                 final String cohortTypePath = cohortRootPath + "/" + cohortType;
-                final List<String> cohortIds = serverProxy.getChildren(cohortTypePath, false);
+                final Stat cohortTypeStat = new Stat();
+                final List<String> cohortIds = serverProxy.getChildren(cohortTypePath, false, cohortTypeStat);
+                logger.debug("cohort type:{}, stat:{}", cohortTypePath, cohortTypeStat);
                 for (final String cohortId : cohortIds) {
                     final Cohort cohort = new Cohort();
                     cohort.setId(cohortId);
@@ -520,7 +545,6 @@ final class ZkMembershipService implements MembershipService {
 
     @Override
     public JoinCohortResponse joinCohort(final JoinCohortRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -535,7 +559,7 @@ final class ZkMembershipService implements MembershipService {
         final CohortType cohortType = request.getCohortType();
         final String nodeId = request.getNodeId();
 
-        String memberChildPath = null;
+        Cohort cohort = null;
         try {
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortMembersPath = cohortRootPath + "/" + cohortType + "/" + cohortId + "/members";
@@ -544,11 +568,29 @@ final class ZkMembershipService implements MembershipService {
                 logger.warn(warning);
                 throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
             }
-            memberChildPath = cohortMembersPath + "/" + memberId;
-            logger.info("Creating member {}", memberChildPath);
+
+            String memberChildPath = cohortMembersPath + "/" + memberId;
+            logger.debug("Creating member {}", memberChildPath);
             // TODO: save data in znode
+            final Stat memberStat = new Stat();
             memberChildPath = serverProxy.create(memberChildPath, null,
-                    ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+                    ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL, memberStat);
+            logger.debug("member:{}, stat:{}", memberChildPath, memberStat);
+
+            final Member member = new Member();
+            member.setMemberId(memberId);
+            member.setCohortType(cohortType);
+            member.setCohortId(cohortId);
+            member.setNodeId(nodeId);
+            member.setPath(memberChildPath);
+            logger.info("Created {}", member);
+
+            final DescribeCohortRequest describeCohortRequest = new DescribeCohortRequest();
+            describeCohortRequest.setNamespace(namespace);
+            describeCohortRequest.setCohortId(cohortId);
+            describeCohortRequest.setCohortType(cohortType);
+            final DescribeCohortResponse describeCohortResponse = describeCohort(describeCohortRequest);
+            cohort = describeCohortResponse.getCohort();
         } catch (final KeeperException keeperException) {
             if (keeperException instanceof KeeperException.NodeExistsException) {
                 // node already exists
@@ -561,22 +603,14 @@ final class ZkMembershipService implements MembershipService {
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
 
-        final Member member = new Member();
-        member.setMemberId(memberId);
-        member.setCohortType(cohortType);
-        member.setCohortId(cohortId);
-        member.setNodeId(nodeId);
-        member.setPath(memberChildPath);
-
         final JoinCohortResponse response = new JoinCohortResponse();
-        response.setMember(member);
+        response.setCohort(cohort);
         logger.debug(response);
         return response;
     }
 
     @Override
     public DescribeCohortResponse describeCohort(final DescribeCohortRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -589,7 +623,7 @@ final class ZkMembershipService implements MembershipService {
         final String cohortId = request.getCohortId();
         final CohortType cohortType = request.getCohortType();
 
-        final List<Member> members = new ArrayList<>();
+        Cohort cohort = null;
         try {
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortMembersPath = cohortRootPath + "/" + cohortType + "/" + cohortId + "/members";
@@ -599,6 +633,7 @@ final class ZkMembershipService implements MembershipService {
                 throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
             }
             final List<String> memberIds = serverProxy.getChildren(cohortMembersPath, false);
+            final List<Member> members = new ArrayList<>();
             for (final String memberId : memberIds) {
                 final Member member = new Member();
                 member.setCohortId(cohortId);
@@ -608,6 +643,12 @@ final class ZkMembershipService implements MembershipService {
                 member.setPath(cohortMembersPath + "/" + memberId);
                 members.add(member);
             }
+
+            cohort = new Cohort();
+            cohort.setId(cohortId);
+            cohort.setPath(cohortRootPath + "/" + cohortType + "/" + cohortId);
+            cohort.setType(cohortType);
+            cohort.setMembers(members);
         } catch (final KeeperException keeperException) {
             if (keeperException instanceof KeeperException.NodeExistsException) {
                 // node already exists
@@ -621,16 +662,13 @@ final class ZkMembershipService implements MembershipService {
         }
 
         final DescribeCohortResponse response = new DescribeCohortResponse();
-        response.setCohortId(cohortId);
-        response.setCohortType(cohortType);
-        response.setMembers(members);
+        response.setCohort(cohort);
         logger.debug(response);
         return response;
     }
 
     @Override
     public LeaveCohortResponse leaveCohort(final LeaveCohortRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -652,6 +690,7 @@ final class ZkMembershipService implements MembershipService {
                 throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
             }
             serverProxy.delete(cohortMembersPath + "/" + memberId, -1);
+            logger.info("{} left cohort {}", memberId, cohortMembersPath);
         } catch (final KeeperException keeperException) {
             if (keeperException instanceof KeeperException.NodeExistsException) {
                 // node already exists
@@ -675,7 +714,6 @@ final class ZkMembershipService implements MembershipService {
 
     @Override
     public DeleteCohortResponse deleteCohort(final DeleteCohortRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -696,16 +734,17 @@ final class ZkMembershipService implements MembershipService {
                 throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
             }
 
-            logger.info("Deleting cohort {}", cohortPath);
+            logger.debug("Deleting cohort {}", cohortPath);
             final List<String> childNodes = flattenTree(cohortPath);
             logger.debug(childNodes);
 
             // start with leaves, work up from there
             for (int iter = childNodes.size() - 1; iter >= 0; iter--) {
                 final String path = childNodes.get(iter);
-                logger.info("Deleting {}", path);
                 serverProxy.delete(path, -1);
+                logger.info("Deleted {}", path);
             }
+            logger.info("Deleted cohort {}", cohortPath);
         } catch (final KeeperException keeperException) {
             if (keeperException instanceof KeeperException.NodeExistsException) {
                 // node already exists
@@ -728,7 +767,6 @@ final class ZkMembershipService implements MembershipService {
 
     @Override
     public DeleteCohortTypeResponse deleteCohortType(final DeleteCohortTypeRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -748,16 +786,17 @@ final class ZkMembershipService implements MembershipService {
                 throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
             }
 
-            logger.info("Delete cohortType {}", cohortTypePath);
+            logger.debug("Deleting cohortType {}", cohortTypePath);
             final List<String> childNodes = flattenTree(cohortTypePath);
             logger.debug(childNodes);
 
             // start with leaves, work up from there
             for (int iter = childNodes.size() - 1; iter >= 0; iter--) {
                 final String path = childNodes.get(iter);
-                logger.info("Deleting {}", path);
                 serverProxy.delete(path, -1);
+                logger.info("Deleted {}", path);
             }
+            logger.info("Deleted cohortType {}", cohortTypePath);
         } catch (final KeeperException keeperException) {
             if (keeperException instanceof KeeperException.NodeExistsException) {
                 // node already exists
@@ -779,7 +818,6 @@ final class ZkMembershipService implements MembershipService {
 
     @Override
     public DeleteNodeResponse deleteNode(final DeleteNodeRequest request) throws MembershipServerException {
-        // TODO
         logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -790,6 +828,7 @@ final class ZkMembershipService implements MembershipService {
         }
         final String namespace = request.getNamespace();
         final String nodeId = request.getNodeId();
+        boolean success = false;
         try {
             final String nodeRootPath = "/" + namespace + "/nodes";
             final String nodePath = nodeRootPath + "/" + nodeId;
@@ -799,8 +838,9 @@ final class ZkMembershipService implements MembershipService {
                 throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
             }
 
-            logger.info("Deleting node {}", nodePath);
             serverProxy.delete(nodePath, -1);
+            success = true;
+            logger.info("Deleted node {}", nodePath);
         } catch (final KeeperException keeperException) {
             if (keeperException instanceof KeeperException.NodeExistsException) {
                 // node already exists
@@ -816,7 +856,7 @@ final class ZkMembershipService implements MembershipService {
         final DeleteNodeResponse response = new DeleteNodeResponse();
         response.setNamespace(namespace);
         response.setNodeId(nodeId);
-        response.setSuccess(true);
+        response.setSuccess(success);
         logger.debug(response);
         return response;
     }

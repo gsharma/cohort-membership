@@ -1,18 +1,16 @@
 package com.github.membership.domain;
 
-import java.net.InetSocketAddress;
-
 public final class Node {
     private String id;
-    private InetSocketAddress address;
+    private String address;
     private NodePersona persona;
     private String path;
 
-    public InetSocketAddress getAddress() {
+    public String getAddress() {
         return address;
     }
 
-    public void setAddress(InetSocketAddress address) {
+    public void setAddress(String address) {
         this.address = address;
     }
 

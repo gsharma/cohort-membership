@@ -6,7 +6,7 @@ public final class NewNodeRequest {
     private String namespace;
     private String nodeId;
     private NodePersona persona;
-    private InetSocketAddress address;
+    private String address;
 
     public boolean validate() {
         // TODO
@@ -21,11 +21,11 @@ public final class NewNodeRequest {
         this.nodeId = nodeId;
     }
 
-    public InetSocketAddress getAddress() {
+    public String getAddress() {
         return address;
     }
 
-    public void setAddress(InetSocketAddress address) {
+    public void setAddress(String address) {
         this.address = address;
     }
 
