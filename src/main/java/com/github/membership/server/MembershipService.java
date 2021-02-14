@@ -14,6 +14,8 @@ import com.github.membership.domain.LeaveCohortRequest;
 import com.github.membership.domain.LeaveCohortResponse;
 import com.github.membership.domain.ListCohortsRequest;
 import com.github.membership.domain.ListCohortsResponse;
+import com.github.membership.domain.ListNodesRequest;
+import com.github.membership.domain.ListNodesResponse;
 import com.github.membership.domain.NewCohortRequest;
 import com.github.membership.domain.NewCohortResponse;
 import com.github.membership.domain.NewCohortTypeRequest;
@@ -36,6 +38,8 @@ interface MembershipService extends Lifecycle {
     NewCohortResponse newCohort(final NewCohortRequest request) throws MembershipServerException;
 
     NewNodeResponse newNode(final NewNodeRequest request) throws MembershipServerException;
+
+    ListNodesResponse listNodes(final ListNodesRequest request) throws MembershipServerException;
 
     ListCohortsResponse listCohorts(final ListCohortsRequest request) throws MembershipServerException;
 

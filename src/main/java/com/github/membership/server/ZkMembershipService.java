@@ -40,6 +40,8 @@ import com.github.membership.domain.LeaveCohortRequest;
 import com.github.membership.domain.LeaveCohortResponse;
 import com.github.membership.domain.ListCohortsRequest;
 import com.github.membership.domain.ListCohortsResponse;
+import com.github.membership.domain.ListNodesRequest;
+import com.github.membership.domain.ListNodesResponse;
 import com.github.membership.domain.Member;
 import com.github.membership.domain.NewCohortRequest;
 import com.github.membership.domain.NewCohortResponse;
@@ -99,9 +101,9 @@ final class ZkMembershipService implements MembershipService {
 
             final CountDownLatch transitionedToConnected = new CountDownLatch(1);
             // final StringBuilder connectString = new StringBuilder();
-            //for (final InetSocketAddress serverAddress : serverAddresses) {
-            //    connectString.append(serverAddress.getHostName()).append(':').append(serverAddress.getPort()).append(',');
-            //}
+            // for (final InetSocketAddress serverAddress : serverAddresses) {
+            // connectString.append(serverAddress.getHostName()).append(':').append(serverAddress.getPort()).append(',');
+            // }
             final int sessionTimeoutMillis = 2000;
             final Watcher watcher = new Watcher() {
                 @Override
@@ -379,6 +381,49 @@ final class ZkMembershipService implements MembershipService {
     }
 
     @Override
+    public ListNodesResponse listNodes(final ListNodesRequest request) throws MembershipServerException {
+        // TODO
+        logger.debug(request);
+        if (!isRunning()) {
+            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
+                    "Invalid attempt to operate an already stopped membership service");
+        }
+        if (!request.validate()) {
+            throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        }
+        final String namespace = request.getNamespace();
+        final List<Node> nodes = new ArrayList<>();
+        try {
+            final String nodeRootPath = "/" + namespace + "/nodes";
+            final List<String> nodeIds = serverProxy.getChildren(nodeRootPath, false);
+            for (final String nodeId : nodeIds) {
+                final Node node = new Node();
+                node.setId(nodeId);
+                node.setPath(nodeRootPath + "/" + nodeId);
+                // TODO
+                node.setAddress(null);
+                node.setPersona(null);
+                nodes.add(node);
+            }
+        } catch (final KeeperException keeperException) {
+            if (keeperException instanceof KeeperException.NodeExistsException) {
+                // node already exists
+            } else {
+                // fix later
+                throw new MembershipServerException(Code.UNKNOWN_FAILURE, keeperException);
+            }
+        } catch (final InterruptedException interruptedException) {
+            // fix later
+            throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
+        }
+
+        final ListNodesResponse response = new ListNodesResponse();
+        response.setNodes(nodes);
+        logger.debug(response);
+        return response;
+    }
+
+    @Override
     public NewNodeResponse newNode(final NewNodeRequest request) throws MembershipServerException {
         // TODO
         logger.debug(request);
@@ -400,7 +445,7 @@ final class ZkMembershipService implements MembershipService {
                 logger.info("Creating node {}", nodeChildPath);
                 // TODO: save data in znode
                 nodeChildPath = serverProxy.create(nodeChildPath, null,
-                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
             } else {
                 logger.warn("Failed to locate node tree {}", nodeChildPath);
             }
