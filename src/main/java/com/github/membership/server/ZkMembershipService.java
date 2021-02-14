@@ -60,24 +60,26 @@ import com.github.membership.server.MembershipServerException.Code;
 final class ZkMembershipService implements MembershipService {
     private static final Logger logger = LogManager.getLogger(ZkMembershipService.class.getSimpleName());
 
-    private final String identity = UUID.randomUUID().toString();
+    private String identity;
 
     private final AtomicBoolean running;
     private final AtomicBoolean ready;
 
-    private final List<InetSocketAddress> serverAddresses;
+    // private final List<InetSocketAddress> serverAddresses;
+    private String connectString;
 
     private ZooKeeper serverProxy;
     private long serverSessionId;
 
     private Set<String> trackedNamespaces;
 
-    ZkMembershipService(final List<InetSocketAddress> serverAddresses) {
+    ZkMembershipService(final String connectString) {
         this.running = new AtomicBoolean(false);
         this.ready = new AtomicBoolean(false);
 
-        this.serverAddresses = new ArrayList<>();
-        this.serverAddresses.addAll(serverAddresses);
+        // this.serverAddresses = new ArrayList<>();
+        // this.serverAddresses.addAll(serverAddresses);
+        this.connectString = connectString;
 
         this.trackedNamespaces = new CopyOnWriteArraySet<>();
     }
@@ -89,16 +91,17 @@ final class ZkMembershipService implements MembershipService {
 
     @Override
     public void start() throws MembershipServerException {
+        identity = UUID.randomUUID().toString();
         logger.info("Starting ZkCohortMembership [{}]", getIdentity());
         if (running.compareAndSet(false, true)) {
             serverProxy = null;
-            serverSessionId = 0;
+            serverSessionId = 0L;
 
             final CountDownLatch transitionedToConnected = new CountDownLatch(1);
-            final StringBuilder connectString = new StringBuilder();
-            for (final InetSocketAddress serverAddress : serverAddresses) {
-                connectString.append(serverAddress.getHostName()).append(':').append(serverAddress.getPort()).append(',');
-            }
+            // final StringBuilder connectString = new StringBuilder();
+            //for (final InetSocketAddress serverAddress : serverAddresses) {
+            //    connectString.append(serverAddress.getHostName()).append(':').append(serverAddress.getPort()).append(',');
+            //}
             final int sessionTimeoutMillis = 2000;
             final Watcher watcher = new Watcher() {
                 @Override
@@ -116,7 +119,7 @@ final class ZkMembershipService implements MembershipService {
                 }
             };
             try {
-                serverProxy = new ZooKeeper(connectString.toString(), sessionTimeoutMillis, watcher);
+                serverProxy = new ZooKeeper(connectString, sessionTimeoutMillis, watcher);
                 logger.debug("Server proxy connection state:{}", serverProxy.getState());
                 transitionedToConnected.await();
 
@@ -157,7 +160,7 @@ final class ZkMembershipService implements MembershipService {
             } finally {
                 serverProxy = null;
             }
-            serverAddresses.clear();
+            // serverAddresses.clear();
             logger.info("Stopped ZkCohortMembership [{}], state:{}, sessionId:{}",
                     getIdentity(), state, serverSessionId);
         } else {

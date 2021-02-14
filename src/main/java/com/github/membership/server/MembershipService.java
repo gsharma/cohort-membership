@@ -1,8 +1,5 @@
 package com.github.membership.server;
 
-import java.net.InetSocketAddress;
-import java.util.List;
-
 import com.github.membership.domain.DeleteCohortRequest;
 import com.github.membership.domain.DeleteCohortResponse;
 import com.github.membership.domain.DeleteCohortTypeRequest;
@@ -60,8 +57,8 @@ interface MembershipService extends Lifecycle {
 
     // ReleaseLockResponse releaseLock(final ReleaseLockRequest request) throws MembershipServerException;
 
-    static MembershipService getService(final List<InetSocketAddress> serverAddresses) {
-        return new ZkMembershipService(serverAddresses);
+    static MembershipService getService(final String connectString) {
+        return new ZkMembershipService(connectString);
     }
 
 }
