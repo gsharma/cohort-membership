@@ -14,6 +14,7 @@
     <github.repo.name>cohort-membership</github.repo.name>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <zookeeper.version>3.6.0</zookeeper.version>
+    <grpc.version>1.33.0</grpc.version>
     <curator-test.version>5.1.0</curator-test.version>
     <metrics-core.version>3.2.5</metrics-core.version>
     <snappy-java.version>1.1.7</snappy-java.version>
@@ -76,10 +77,27 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>${guava.version}</version>
-      <scope>test</scope>
+      <!--<scope>test</scope>-->
     </dependency>
 
-    <!-- 2. annotations -->
+    <!-- 2. grpc -->
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-protobuf</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+
+    <!-- 3. annotations -->
     <!--
       JDK9 and onwards removed/renamed @generated annotation used by code generation tools
       like grpc, causing build failures. Adding javax.annotation-api dependency as a substitute
@@ -90,7 +108,7 @@
       <version>${javax.annotation.api.version}</version>
     </dependency>
 
-    <!-- 3. junit -->
+    <!-- 4. junit -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -104,7 +122,7 @@
       <scope>test</scope>
     </dependency>
     
-    <!-- 4. logging -->
+    <!-- 5. logging -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
@@ -116,7 +134,7 @@
       <version>${log4j.version}</version>
     </dependency>
 
-    <!-- 5. java object layout -->
+    <!-- 6. java object layout -->
     <dependency>
       <groupId>org.openjdk.jol</groupId>
       <artifactId>jol-core</artifactId>

@@ -1,0 +1,193 @@
+syntax = "proto3";
+
+option java_package = "com.github.membership.rpc";
+option java_multiple_files = true;
+package com.github.membership.rpc;
+
+message Cohort {
+  string id = 1;
+  CohortType type = 2;
+  string path = 3;
+  repeated Member members = 4;
+}
+
+message Member {
+  string memberId = 1;
+  string nodeId = 2;
+  string cohortId = 3;
+  CohortType cohortType = 4;
+  string path = 5;
+}
+
+message Node {
+  string id = 1;
+  string address = 2;
+  NodePersona persona = 3;
+  string path = 4;
+}
+
+enum NodePersona {
+  DATA = 0;
+  COMPUTE = 1;
+  DATA_COMPUTE = 2;
+}
+
+enum CohortType {
+  ONE = 0;
+  TWO = 1;
+  THREE = 2;
+  FOUR = 3;
+}
+
+message NewNamespaceRequest {
+  string namespace = 1;
+}
+
+message NewNamespaceResponse {
+  bool success = 1;
+}
+
+message NewCohortTypeRequest {
+  string namespace = 1;
+  CohortType cohortType = 2;
+}
+
+message NewCohortTypeResponse {
+  bool success = 1;
+}
+
+message NewCohortRequest {
+  string namespace = 1;
+  string cohortId = 2;
+  CohortType cohortType = 3;
+}
+
+message NewCohortResponse {
+  Cohort cohort = 1;
+}
+
+message NewNodeRequest {
+  string namespace = 1;
+  string nodeId = 2;
+  NodePersona persona = 3;
+  string address = 4;
+}
+
+message NewNodeResponse {
+  Node node = 1;
+}
+
+message ListNodesRequest {
+  string namespace = 1;
+}
+
+message ListNodesResponse {
+  repeated Node nodes = 1;
+}
+
+message ListCohortsRequest {
+  string namespace = 1;
+}
+
+message ListCohortsResponse {
+  repeated Cohort cohorts = 1;
+}
+
+message JoinCohortRequest {
+  string namespace = 1;
+  string nodeId = 2;
+  CohortType cohortType = 3;
+  string cohortId = 4;
+  string memberId = 5;
+}
+
+message JoinCohortResponse {
+  Cohort cohort = 1;
+}
+
+message DescribeCohortRequest {
+  string namespace = 1;
+  string cohortId = 2;
+  CohortType cohortType = 3;
+}
+
+message DescribeCohortResponse {
+  Cohort cohort = 1;
+}
+
+message LeaveCohortRequest {
+  string namespace = 1;
+  string cohortId = 2;
+  CohortType cohortType = 3;
+  string memberId = 4;
+}
+
+message LeaveCohortResponse {
+  bool success = 1;
+}
+
+message DeleteCohortRequest {
+  string namespace = 1;
+  string cohortId = 2;
+  CohortType cohortType = 3;
+}
+
+message DeleteCohortResponse {
+  bool success = 1;
+}
+
+message DeleteCohortTypeRequest {
+  string namespace = 1;
+  CohortType cohortType = 2;
+}
+
+message DeleteCohortTypeResponse {
+  bool success = 1;
+}
+
+message DeleteNodeRequest {
+  string namespace = 1;
+  string nodeId = 2;
+}
+
+message DeleteNodeResponse {
+  bool success = 1;
+}
+
+message PurgeNamespaceRequest {
+  string namespace = 1;
+}
+
+message PurgeNamespaceResponse {
+  bool success = 1;
+}
+
+service MembershipService {
+  rpc newNamespace (NewNamespaceRequest) returns (NewNamespaceResponse);
+
+  rpc newCohortType (NewCohortTypeRequest) returns (NewCohortTypeResponse);
+
+  rpc newCohort (NewCohortRequest) returns (NewCohortResponse);
+
+  rpc newNode (NewNodeRequest) returns (NewNodeResponse);
+
+  rpc listNodes (ListNodesRequest) returns (ListNodesResponse);
+
+  rpc listCohorts (ListCohortsRequest) returns (ListCohortsResponse);
+
+  rpc joinCohort (JoinCohortRequest) returns (JoinCohortResponse);
+
+  rpc describeCohort (DescribeCohortRequest) returns (DescribeCohortResponse);
+
+  rpc leaveCohort (LeaveCohortRequest) returns (LeaveCohortResponse);
+
+  rpc deleteCohort (DeleteCohortRequest) returns (DeleteCohortResponse);
+
+  rpc deleteCohortType (DeleteCohortTypeRequest) returns (DeleteCohortTypeResponse);
+
+  rpc deleteNode (DeleteNodeRequest) returns (DeleteNodeResponse);
+
+  rpc purgeNamespace (PurgeNamespaceRequest) returns (PurgeNamespaceResponse);
+
+}
+

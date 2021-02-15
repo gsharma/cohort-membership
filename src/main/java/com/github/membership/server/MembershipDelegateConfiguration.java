@@ -1,6 +1,6 @@
 package com.github.membership.server;
 
-public final class MembershipServiceConfiguration {
+public final class MembershipDelegateConfiguration {
     private String connectString;
 
     public String getConnectString() {
@@ -13,6 +13,6 @@ public final class MembershipServiceConfiguration {
 
     @Override
     public String toString() {
-        return "MembershipServiceConfiguration [connectString=" + connectString + "]";
+        return "MembershipDelegateConfiguration [connectString=" + connectString + "]";
     }
 }
