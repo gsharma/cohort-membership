@@ -38,6 +38,9 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.grpc.Status.Code;
 import io.grpc.stub.StreamObserver;
 
 public final class MembershipServiceImpl extends MembershipServiceImplBase {
@@ -51,7 +54,6 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
 
     @Override
     public void newNamespace(final NewNamespaceRequest request, final StreamObserver<NewNamespaceResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final boolean success = membershipDelegate.newNamespace(namespace);
@@ -60,14 +62,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
     @Override
     public void newCohortType(final NewCohortTypeRequest request, final StreamObserver<NewCohortTypeResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final CohortType cohortType = request.getCohortType();
@@ -77,14 +78,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
     @Override
     public void newCohort(final NewCohortRequest request, final StreamObserver<NewCohortResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
@@ -95,14 +95,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
     @Override
     public void newNode(final NewNodeRequest request, final StreamObserver<NewNodeResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final String nodeId = request.getNodeId();
@@ -114,14 +113,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
     @Override
     public void listNodes(final ListNodesRequest request, final StreamObserver<ListNodesResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final List<Node> nodes = membershipDelegate.listNodes(namespace);
@@ -130,14 +128,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
     @Override
     public void listCohorts(final ListCohortsRequest request, final StreamObserver<ListCohortsResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final List<Cohort> cohorts = membershipDelegate.listCohorts(namespace);
@@ -146,14 +143,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
     @Override
     public void joinCohort(final JoinCohortRequest request, final StreamObserver<JoinCohortResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
@@ -166,14 +162,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
     @Override
     public void describeCohort(final DescribeCohortRequest request, final StreamObserver<DescribeCohortResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
@@ -183,14 +178,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
     @Override
     public void leaveCohort(final LeaveCohortRequest request, final StreamObserver<LeaveCohortResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
@@ -202,14 +196,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
     @Override
     public void deleteCohort(final DeleteCohortRequest request, final StreamObserver<DeleteCohortResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
@@ -220,14 +213,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
     @Override
     public void deleteCohortType(final DeleteCohortTypeRequest request, final StreamObserver<DeleteCohortTypeResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final CohortType cohortType = request.getCohortType();
@@ -237,14 +229,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
     @Override
     public void deleteNode(final DeleteNodeRequest request, final StreamObserver<DeleteNodeResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final String nodeId = request.getNodeId();
@@ -254,14 +245,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
     @Override
     public void purgeNamespace(final PurgeNamespaceRequest request, final StreamObserver<PurgeNamespaceResponse> responseObserver) {
-        // TODO
         try {
             final String namespace = request.getNamespace();
             final boolean success = membershipDelegate.purgeNamespace(namespace);
@@ -270,9 +260,12 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (MembershipServerException problem) {
-            responseObserver.onError(null);
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
         }
     }
 
+    private static StatusRuntimeException toStatusRuntimeException(final MembershipServerException serverException) {
+        return new StatusRuntimeException(Status.fromCode(Code.INTERNAL).withCause(serverException).withDescription(serverException.getMessage()));
+    }
 }
