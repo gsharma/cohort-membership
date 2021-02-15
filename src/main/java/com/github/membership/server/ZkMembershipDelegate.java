@@ -27,34 +27,9 @@ import org.apache.zookeeper.data.Stat;
 
 import com.github.membership.rpc.Cohort;
 import com.github.membership.rpc.CohortType;
-import com.github.membership.rpc.DeleteCohortRequest;
-import com.github.membership.rpc.DeleteCohortResponse;
-import com.github.membership.rpc.DeleteCohortTypeRequest;
-import com.github.membership.rpc.DeleteCohortTypeResponse;
-import com.github.membership.rpc.DeleteNodeRequest;
-import com.github.membership.rpc.DeleteNodeResponse;
-import com.github.membership.rpc.DescribeCohortRequest;
-import com.github.membership.rpc.DescribeCohortResponse;
-import com.github.membership.rpc.JoinCohortRequest;
-import com.github.membership.rpc.JoinCohortResponse;
-import com.github.membership.rpc.LeaveCohortRequest;
-import com.github.membership.rpc.LeaveCohortResponse;
-import com.github.membership.rpc.ListCohortsRequest;
-import com.github.membership.rpc.ListCohortsResponse;
-import com.github.membership.rpc.ListNodesRequest;
-import com.github.membership.rpc.ListNodesResponse;
 import com.github.membership.rpc.Member;
-import com.github.membership.rpc.NewCohortRequest;
-import com.github.membership.rpc.NewCohortResponse;
-import com.github.membership.rpc.NewCohortTypeRequest;
-import com.github.membership.rpc.NewCohortTypeResponse;
-import com.github.membership.rpc.NewNamespaceRequest;
-import com.github.membership.rpc.NewNamespaceResponse;
-import com.github.membership.rpc.NewNodeRequest;
-import com.github.membership.rpc.NewNodeResponse;
 import com.github.membership.rpc.Node;
-import com.github.membership.rpc.PurgeNamespaceRequest;
-import com.github.membership.rpc.PurgeNamespaceResponse;
+import com.github.membership.rpc.NodePersona;
 import com.github.membership.server.MembershipServerException.Code;
 
 /**
@@ -181,8 +156,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public NewNamespaceResponse newNamespace(final NewNamespaceRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public boolean newNamespace(final String namespace) throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -193,7 +168,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         // }
         boolean success = false;
         try {
-            final String namespace = request.getNamespace();
+            // final String namespace = request.getNamespace();
             String namespacePath = "/" + namespace;
 
             // create namespace node
@@ -235,16 +210,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-
-        final NewNamespaceResponse response = NewNamespaceResponse.newBuilder()
-                .setSuccess(success).build();
-        logger.debug(response);
-        return response;
+        return success;
     }
 
     @Override
-    public PurgeNamespaceResponse purgeNamespace(final PurgeNamespaceRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public boolean purgeNamespace(final String namespace) throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -255,7 +226,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         // }
         boolean success = false;
         try {
-            final String namespace = request.getNamespace();
+            // final String namespace = request.getNamespace();
             final String namespacePath = "/" + namespace;
             logger.debug("Purging namespace {}", namespacePath);
             final List<String> childNodes = flattenTree(namespacePath);
@@ -279,16 +250,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-
-        final PurgeNamespaceResponse response = PurgeNamespaceResponse.newBuilder()
-                .setSuccess(success).build();
-        logger.debug(response);
-        return response;
+        return success;
     }
 
     @Override
-    public NewCohortTypeResponse newCohortType(final NewCohortTypeRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public boolean newCohortType(final String namespace, final CohortType cohortType) throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -299,8 +266,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         // }
         boolean success = false;
         try {
-            final String namespace = request.getNamespace();
-            final CohortType cohortType = request.getCohortType();
+            // final String namespace = request.getNamespace();
+            // final CohortType cohortType = request.getCohortType();
             final String cohortRootPath = "/" + namespace + "/cohorts";
             String cohortTypePath = cohortRootPath + "/" + cohortType;
 
@@ -326,16 +293,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-
-        final NewCohortTypeResponse response = NewCohortTypeResponse.newBuilder()
-                .setSuccess(success).build();
-        logger.debug(response);
-        return response;
+        return success;
     }
 
     @Override
-    public NewCohortResponse newCohort(final NewCohortRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public Cohort newCohort(final String namespace, final String cohortId, final CohortType cohortType) throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -346,9 +309,9 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         // }
         Cohort cohort = null;
         try {
-            final String namespace = request.getNamespace();
-            final String cohortId = request.getCohortId();
-            final CohortType cohortType = request.getCohortType();
+            // final String namespace = request.getNamespace();
+            // final String cohortId = request.getCohortId();
+            // final CohortType cohortType = request.getCohortType();
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortTypePath = cohortRootPath + "/" + cohortType;
             if (serverProxy.exists(cohortTypePath, false) == null) {
@@ -425,16 +388,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-
-        final NewCohortResponse response = NewCohortResponse.newBuilder()
-                .setCohort(cohort).build();
-        logger.debug(response);
-        return response;
+        return cohort;
     }
 
     @Override
-    public ListNodesResponse listNodes(final ListNodesRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public List<Node> listNodes(final String namespace) throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -445,7 +404,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         // }
         final List<Node> nodes = new ArrayList<>();
         try {
-            final String namespace = request.getNamespace();
+            // final String namespace = request.getNamespace();
             final String nodeRootPath = "/" + namespace + "/nodes";
             logger.debug("List nodes under: {}", nodeRootPath);
             final Stat nodeRootStat = new Stat();
@@ -469,15 +428,13 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-        final ListNodesResponse response = ListNodesResponse.newBuilder()
-                .addAllNodes(nodes).build();
-        logger.debug(response);
-        return response;
+        return nodes;
     }
 
     @Override
-    public NewNodeResponse newNode(final NewNodeRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public Node newNode(final String namespace, final String nodeId, final NodePersona persona, final String address)
+            throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -488,9 +445,9 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         // }
         Node node = null;
         try {
-            final String namespace = request.getNamespace();
-            final String nodeId = request.getNodeId();
-            final String address = request.getAddress();
+            // final String namespace = request.getNamespace();
+            // final String nodeId = request.getNodeId();
+            // final String address = request.getAddress();
             final String nodeRootPath = "/" + namespace + "/nodes";
             String nodeChildPath = nodeRootPath + "/" + nodeId;
             if (serverProxy.exists(nodeChildPath, false) == null) {
@@ -545,16 +502,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-
-        final NewNodeResponse response = NewNodeResponse.newBuilder()
-                .setNode(node).build();
-        logger.debug(response);
-        return response;
+        return node;
     }
 
     @Override
-    public ListCohortsResponse listCohorts(final ListCohortsRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public List<Cohort> listCohorts(final String namespace) throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -565,7 +518,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         // }
         final List<Cohort> cohorts = new ArrayList<>();
         try {
-            final String namespace = request.getNamespace();
+            // final String namespace = request.getNamespace();
             final String cohortRootPath = "/" + namespace + "/cohorts";
             logger.debug("List cohorts under {}", cohortRootPath);
             final Stat cohortRootStat = new Stat();
@@ -577,10 +530,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 final List<String> cohortIds = serverProxy.getChildren(cohortTypePath, false, cohortTypeStat);
                 logger.debug("cohort type:{}, stat:{}", cohortTypePath, cohortTypeStat);
                 for (final String cohortId : cohortIds) {
-                    final DescribeCohortRequest describeCohortRequest = DescribeCohortRequest.newBuilder().setNamespace(namespace)
-                            .setCohortId(cohortId).setCohortType(cohortTypeFromString(cohortType)).build();
-                    final DescribeCohortResponse describeCohortResponse = describeCohort(describeCohortRequest);
-                    final Cohort cohort = describeCohortResponse.getCohort();
+                    final Cohort cohort = describeCohort(namespace, cohortId, cohortTypeFromString(cohortType));
                     cohorts.add(cohort);
                 }
             }
@@ -595,15 +545,13 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-
-        final ListCohortsResponse response = ListCohortsResponse.newBuilder().addAllCohorts(cohorts).build();
-        logger.debug(response);
-        return response;
+        return cohorts;
     }
 
     @Override
-    public JoinCohortResponse joinCohort(final JoinCohortRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public Cohort joinCohort(final String namespace, final String memberId, final String cohortId, final CohortType cohortType, final String nodeId)
+            throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -615,11 +563,11 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
         Cohort cohort = null;
         try {
-            final String namespace = request.getNamespace();
-            final String memberId = request.getMemberId();
-            final String cohortId = request.getCohortId();
-            final CohortType cohortType = request.getCohortType();
-            final String nodeId = request.getNodeId();
+            // final String namespace = request.getNamespace();
+            // final String memberId = request.getMemberId();
+            // final String cohortId = request.getCohortId();
+            // final CohortType cohortType = request.getCohortType();
+            // final String nodeId = request.getNodeId();
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortMembersPath = cohortRootPath + "/" + cohortType + "/" + cohortId + "/members";
             if (serverProxy.exists(cohortMembersPath, false) == null) {
@@ -670,10 +618,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // serverProxy.exists(memberChildPath, membershipChangedWatcher);
             // serverProxy.getChildren(cohortMembersPath, membershipChangedWatcher);
 
-            final DescribeCohortRequest describeCohortRequest = DescribeCohortRequest.newBuilder().setNamespace(namespace).setCohortId(cohortId)
-                    .setCohortType(cohortType).build();
-            final DescribeCohortResponse describeCohortResponse = describeCohort(describeCohortRequest);
-            cohort = describeCohortResponse.getCohort();
+            cohort = describeCohort(namespace, cohortId, cohortType);
         } catch (final KeeperException keeperException) {
             if (keeperException instanceof KeeperException.NodeExistsException) {
                 // node already exists
@@ -685,16 +630,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-
-        final JoinCohortResponse response = JoinCohortResponse.newBuilder()
-                .setCohort(cohort).build();
-        logger.debug(response);
-        return response;
+        return cohort;
     }
 
     @Override
-    public DescribeCohortResponse describeCohort(final DescribeCohortRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public Cohort describeCohort(final String namespace, final String cohortId, final CohortType cohortType) throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -706,9 +647,9 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
         Cohort cohort = null;
         try {
-            final String namespace = request.getNamespace();
-            final String cohortId = request.getCohortId();
-            final CohortType cohortType = request.getCohortType();
+            // final String namespace = request.getNamespace();
+            // final String cohortId = request.getCohortId();
+            // final CohortType cohortType = request.getCohortType();
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortMembersPath = cohortRootPath + "/" + cohortType + "/" + cohortId + "/members";
             if (serverProxy.exists(cohortMembersPath, false) == null) {
@@ -744,15 +685,13 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-
-        final DescribeCohortResponse response = DescribeCohortResponse.newBuilder().setCohort(cohort).build();
-        logger.debug(response);
-        return response;
+        return cohort;
     }
 
     @Override
-    public LeaveCohortResponse leaveCohort(final LeaveCohortRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public boolean leaveCohort(final String namespace, final String cohortId, final CohortType cohortType, final String memberId)
+            throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -763,10 +702,10 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         // }
         boolean success = false;
         try {
-            final String namespace = request.getNamespace();
-            final String cohortId = request.getCohortId();
-            final CohortType cohortType = request.getCohortType();
-            final String memberId = request.getMemberId();
+            // final String namespace = request.getNamespace();
+            // final String cohortId = request.getCohortId();
+            // final CohortType cohortType = request.getCohortType();
+            // final String memberId = request.getMemberId();
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortMembersPath = cohortRootPath + "/" + cohortType + "/" + cohortId + "/members";
             if (serverProxy.exists(cohortMembersPath, false) == null) {
@@ -788,16 +727,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-
-        final LeaveCohortResponse response = LeaveCohortResponse.newBuilder()
-                .setSuccess(success).build();
-        logger.debug(response);
-        return response;
+        return success;
     }
 
     @Override
-    public DeleteCohortResponse deleteCohort(final DeleteCohortRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public boolean deleteCohort(final String namespace, final String cohortId, final CohortType cohortType) throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -808,9 +743,9 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         // }
         boolean success = false;
         try {
-            final String namespace = request.getNamespace();
-            final String cohortId = request.getCohortId();
-            final CohortType cohortType = request.getCohortType();
+            // final String namespace = request.getNamespace();
+            // final String cohortId = request.getCohortId();
+            // final CohortType cohortType = request.getCohortType();
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortPath = cohortRootPath + "/" + cohortType + "/" + cohortId;
             if (serverProxy.exists(cohortPath, false) == null) {
@@ -842,16 +777,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-
-        final DeleteCohortResponse response = DeleteCohortResponse.newBuilder()
-                .setSuccess(success).build();
-        logger.debug(response);
-        return response;
+        return success;
     }
 
     @Override
-    public DeleteCohortTypeResponse deleteCohortType(final DeleteCohortTypeRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public boolean deleteCohortType(final String namespace, final CohortType cohortType) throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -862,8 +793,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         // }
         boolean success = false;
         try {
-            final String namespace = request.getNamespace();
-            final CohortType cohortType = request.getCohortType();
+            // final String namespace = request.getNamespace();
+            // final CohortType cohortType = request.getCohortType();
             final String cohortRootPath = "/" + namespace + "/cohorts";
             final String cohortTypePath = cohortRootPath + "/" + cohortType;
             if (serverProxy.exists(cohortTypePath, false) == null) {
@@ -895,16 +826,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-
-        final DeleteCohortTypeResponse response = DeleteCohortTypeResponse.newBuilder()
-                .setSuccess(success).build();
-        logger.debug(response);
-        return response;
+        return success;
     }
 
     @Override
-    public DeleteNodeResponse deleteNode(final DeleteNodeRequest request) throws MembershipServerException {
-        logger.debug(request);
+    public boolean deleteNode(final String namespace, final String nodeId) throws MembershipServerException {
+        // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -915,8 +842,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         // }
         boolean success = false;
         try {
-            final String namespace = request.getNamespace();
-            final String nodeId = request.getNodeId();
+            // final String namespace = request.getNamespace();
+            // final String nodeId = request.getNodeId();
             final String nodeRootPath = "/" + namespace + "/nodes";
             final String nodePath = nodeRootPath + "/" + nodeId;
             if (serverProxy.exists(nodePath, false) == null) {
@@ -939,11 +866,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             // fix later
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
-
-        final DeleteNodeResponse response = DeleteNodeResponse.newBuilder()
-                .setSuccess(success).build();
-        logger.debug(response);
-        return response;
+        return success;
     }
 
     private static boolean checkIdempotency(final KeeperException keeperException) {
