@@ -103,7 +103,11 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                             // TODO: handle session expiration
                             logger.info("ZkCohortMembership zk session expired, sessionId:{}, servers:[{}]",
                                     getServerSessionId(), connectString);
-                            handleSessionExpiration();
+                            try {
+                                handleSessionExpiration();
+                            } catch (MembershipServerException problem) {
+                                logger.error("handleSessionExpiration encountered a problem", problem);
+                            }
                             break;
                         case Disconnected:
                             logger.info("ZkCohortMembership disconnected from zk, sessionId:{}, servers:[{}]",
@@ -149,9 +153,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     // TODO
-    private void handleSessionExpiration() {
+    private void handleSessionExpiration() throws MembershipServerException {
         logger.info("ZkCohortMembership handling session expiration, sessionId:{}, servers:[{}]",
                 getServerSessionId(), configuration.getConnectString());
+        // potentially dangerous
+        stop();
+        start();
     }
 
     // TODO

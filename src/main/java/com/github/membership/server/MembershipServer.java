@@ -27,7 +27,8 @@ public final class MembershipServer implements Lifecycle {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean ready = new AtomicBoolean(false);
 
-    private final MembershipServerConfiguration serverConfig;
+    private MembershipServerConfiguration serverConfig;
+    private MembershipServiceImpl service;
 
     private MembershipDelegate delegate;
     private Server server;
@@ -36,6 +37,25 @@ public final class MembershipServer implements Lifecycle {
 
     public MembershipServer(final MembershipServerConfiguration serverConfig) {
         this.serverConfig = serverConfig;
+    }
+
+    // Minimally invasive way to reconnect to backend without recycling either
+    // the MembershipServer or MembershipClient.
+    public void reloadServerConfig(final String connectString) throws Exception {
+        logger.info("Hot-reloading MembershipServer [{}] configuration", getIdentity());
+        if (isRunning()) {
+            if (delegate != null) {
+                this.delegate.stop();
+                // if connectString is null, keep existing one
+                if (connectString != null && !connectString.trim().isEmpty()) {
+                    this.serverConfig.setConnectString(connectString);
+                }
+                this.delegate = MembershipDelegate.getDelegate(serverConfig);
+                delegate.start();
+                service.setDelegate(delegate);
+                logger.info("Reloaded MembershipServer [{}] configuration", getIdentity());
+            }
+        }
     }
 
     @Override
@@ -72,7 +92,8 @@ public final class MembershipServer implements Lifecycle {
                                 return worker;
                             }
                         });
-                        final MembershipServiceImpl service = new MembershipServiceImpl(delegate);
+                        service = new MembershipServiceImpl();
+                        service.setDelegate(delegate);
                         server = NettyServerBuilder.forAddress(new InetSocketAddress(serverConfig.getServerHost(), serverConfig.getServerPort()))
                                 .addService(service).intercept(TransmitStatusRuntimeExceptionInterceptor.instance()).executor(serverExecutor).build();
                         server.start();

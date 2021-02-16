@@ -582,20 +582,15 @@ public final class CohortMembershipTest {
             assertEquals(1, joinCohortResponseOne.getCohort().getMembersList().size());
 
             logger.info("[step-7] zk servers all drop dead");
+            // note that this will leave persistent nodes in previous ensemble
             tiniZkCluster();
-            // Thread.sleep(100L);
 
             logger.info("[step-8] zk servers all come back to life");
             initZkCluster();
-            // since our zk ports are dynamic, update the connect string
-            serviceConfigOne.setConnectString(zkCluster.getConnectString());
+            // since our zk ports are dynamic, connectString got updated for new ensemble
 
-            logger.info("[step-9] restart membership service");
-            membershipServiceOne.stop();
-            assertFalse(membershipServiceOne.isRunning());
-
-            membershipServiceOne = new MembershipServer(serviceConfigOne);
-            membershipServiceOne.start();
+            logger.info("[step-9] edit membership service config");
+            membershipServiceOne.reloadServerConfig(zkCluster.getConnectString());
             assertTrue(membershipServiceOne.isRunning());
 
             logger.info("[step-10] create namespace");

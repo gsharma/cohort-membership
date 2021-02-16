@@ -48,7 +48,10 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
 
     private MembershipDelegate membershipDelegate;
 
-    public MembershipServiceImpl(final MembershipDelegate membershipDelegate) {
+    public MembershipServiceImpl() {
+    }
+
+    public void setDelegate(final MembershipDelegate membershipDelegate) {
         this.membershipDelegate = membershipDelegate;
     }
 

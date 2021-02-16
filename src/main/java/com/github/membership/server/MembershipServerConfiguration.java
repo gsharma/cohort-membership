@@ -1,10 +1,11 @@
 package com.github.membership.server;
 
 public final class MembershipServerConfiguration {
-    private String connectString;
     private String serverHost;
     private int serverPort;
     private int workerCount;
+
+    private String connectString;
     private int clientSessionTimeoutMillis;
     private long clientSessionEstablishmentTimeoutSeconds;
 
