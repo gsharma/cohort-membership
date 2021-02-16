@@ -80,6 +80,7 @@ public final class MembershipClientImpl implements MembershipClient {
     @Override
     public void start() throws Exception {
         if (running.compareAndSet(false, true)) {
+            final long startNanos = System.nanoTime();
             clientExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(workerCount, new ThreadFactory() {
                 private final AtomicInteger threadIter = new AtomicInteger();
                 private final String threadNamePattern = "membership-client-%d";
@@ -103,7 +104,8 @@ public final class MembershipClientImpl implements MembershipClient {
                     .userAgent("membership-client").build();
             serviceStub = MembershipServiceGrpc.newBlockingStub(channel).withWaitForReady();
             ready.set(true);
-            logger.info("Started MembershipClient [{}]", getIdentity());
+            logger.info("Started MembershipClient [{}] connected to {}:{} in {} millis", getIdentity(), serverHost, serverPort,
+                    TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
         }
     }
 
@@ -120,7 +122,7 @@ public final class MembershipClientImpl implements MembershipClient {
                     clientExecutor.shutdownNow();
                     logger.info("Stopped membership client worker threads");
                 }
-                logger.info("Stopped MembershipClient [{}]", getIdentity());
+                logger.info("Stopped MembershipClient [{}] connected to {}:{}", getIdentity(), serverHost, serverPort);
             } catch (Exception tiniProblem) {
                 logger.error(tiniProblem);
             }

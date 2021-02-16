@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
@@ -65,8 +66,8 @@ import com.github.membership.server.MembershipServerConfiguration;
 public final class CohortMembershipTest {
     private static final Logger logger = LogManager.getLogger(CohortMembershipTest.class.getSimpleName());
 
-    private TestingCluster testingCluster;
-    private TestingServer testingServer;
+    private TestingCluster zkCluster;
+    private TestingServer zkServer;
 
     @Test
     public void testBasicJoin() throws Exception {
@@ -74,7 +75,7 @@ public final class CohortMembershipTest {
         MembershipClient client = null;
         try {
             final MembershipServerConfiguration serviceConfig = new MembershipServerConfiguration();
-            serviceConfig.setConnectString(testingCluster.getConnectString());
+            serviceConfig.setConnectString(zkCluster.getConnectString());
             serviceConfig.setServerHost("localhost");
             serviceConfig.setServerPort(5001);
             serviceConfig.setWorkerCount(2);
@@ -312,7 +313,7 @@ public final class CohortMembershipTest {
         MembershipClient clientTwo = null;
         try {
             final MembershipServerConfiguration serviceConfigOne = new MembershipServerConfiguration();
-            serviceConfigOne.setConnectString(testingCluster.getConnectString());
+            serviceConfigOne.setConnectString(zkCluster.getConnectString());
             serviceConfigOne.setServerHost("localhost");
             serviceConfigOne.setServerPort(4001);
             serviceConfigOne.setWorkerCount(2);
@@ -325,7 +326,7 @@ public final class CohortMembershipTest {
             assertTrue(clientOne.isRunning());
 
             final MembershipServerConfiguration serviceConfigTwo = new MembershipServerConfiguration();
-            serviceConfigTwo.setConnectString(testingCluster.getConnectString());
+            serviceConfigTwo.setConnectString(zkCluster.getConnectString());
             serviceConfigTwo.setServerHost("localhost");
             serviceConfigTwo.setServerPort(4002);
             serviceConfigTwo.setWorkerCount(2);
@@ -502,7 +503,7 @@ public final class CohortMembershipTest {
     public void testMembershipServiceLCM() throws Exception {
         for (int iter = 0; iter < 3; iter++) {
             final MembershipDelegateConfiguration configuration = new MembershipDelegateConfiguration();
-            configuration.setConnectString(testingCluster.getConnectString());
+            configuration.setConnectString(zkCluster.getConnectString());
             final MembershipDelegate membershipService = MembershipDelegate.getDelegate(configuration);
             membershipService.start();
             assertTrue(membershipService.isRunning());
@@ -514,7 +515,8 @@ public final class CohortMembershipTest {
 
     @Before
     public void initTestCluster() throws Exception {
-        logger.info("[step-0] init testCluster");
+        final long startNanos = System.nanoTime();
+        logger.info("[step-0] init zk cluster");
         final List<InstanceSpec> instanceSpecs = new ArrayList<>();
         for (int iter = 0; iter < 3; iter++) {
             final String serverHost = "localhost";
@@ -530,46 +532,47 @@ public final class CohortMembershipTest {
         System.setProperty("zookeeper.serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
 
         // testingCluster = new TestingCluster(instanceSpecs);
-        testingCluster = new TestingCluster(3);
-        testingCluster.start();
+        zkCluster = new TestingCluster(3);
+        zkCluster.start();
 
-        final List<TestingZooKeeperServer> testServers = testingCluster.getServers();
+        final List<TestingZooKeeperServer> testServers = zkCluster.getServers();
         assertEquals(3, testServers.size());
         for (final TestingZooKeeperServer testServer : testServers) {
             assertTrue(testServer.getQuorumPeer().isRunning());
             // logger.info(testServer.getQuorumPeer());
         }
-        logger.info("Started testCluster {}", testingCluster.getConnectString());
+        logger.info("Started zk cluster {} in {} millis", zkCluster.getConnectString(),
+                TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
     }
 
     @After
     public void tiniTestCluster() throws Exception {
-        if (testingCluster != null) {
-            logger.info("Stopping testCluster {}", testingCluster.getConnectString());
-            testingCluster.close();
+        if (zkCluster != null) {
+            logger.info("Stopping zk cluster {}", zkCluster.getConnectString());
+            zkCluster.close();
         }
-        logger.info("[step-n] tini testCluster");
+        logger.info("[step-n] tini zk cluster");
     }
 
     // @Before
     public void initTestServer() throws Exception {
-        logger.info("[step-0] init testServer");
+        logger.info("[step-0] init zk server");
         final String serverHost = "localhost";
         final int serverPort = 4000;
         final File dataDir = new File("target/zkDataDir");
         final InstanceSpec instanceSpec = new InstanceSpec(dataDir, serverPort, -1, -1, true, -1, -1, 2);
         // System.setProperty("zk.servers", "localhost:" + instanceSpec.getPort());
         System.setProperty("zookeeper.serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
-        testingServer = new TestingServer(instanceSpec, false);
-        testingServer.start();
+        zkServer = new TestingServer(instanceSpec, false);
+        zkServer.start();
     }
 
     // @After
     public void tiniTestServer() throws Exception {
-        if (testingServer != null) {
-            testingServer.close();
+        if (zkServer != null) {
+            zkServer.close();
         }
-        logger.info("[step-n] tini testServer");
+        logger.info("[step-n] tini zk server");
     }
 
 }

@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.logging.log4j.LogManager;
@@ -72,6 +73,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         identity = UUID.randomUUID().toString();
         logger.info("Starting ZkCohortMembership [{}]", getIdentity());
         if (running.compareAndSet(false, true)) {
+            final long startNanos = System.nanoTime();
             serverProxy = null;
             serverSessionId = 0L;
 
@@ -106,8 +108,9 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
                 serverSessionId = serverProxy.getSessionId();
                 ready.set(true);
-                logger.info("Started ZkCohortMembership [{}], state:{}, sessionId:{}, connectedTo:[{}]",
-                        getIdentity(), serverProxy.getState(), serverSessionId, connectString);
+                logger.info("Started ZkCohortMembership [{}], state:{}, sessionId:{}, connectedTo:[{}] in {} millis",
+                        getIdentity(), serverProxy.getState(), serverSessionId, connectString,
+                        TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
             } catch (final IOException zkConnectProblem) {
                 throw new MembershipServerException(Code.MEMBERSHIP_INIT_FAILURE, "Failed to start membership service");
             } catch (final InterruptedException zkConnectWaitProblem) {
