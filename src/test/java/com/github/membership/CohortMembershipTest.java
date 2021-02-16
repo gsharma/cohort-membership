@@ -505,7 +505,6 @@ public final class CohortMembershipTest {
         }
     }
 
-    @Ignore
     @Test
     public void testServiceDeath() throws Exception {
         MembershipServer membershipServiceOne = null;
@@ -517,7 +516,7 @@ public final class CohortMembershipTest {
             serviceConfigOne.setServerPort(4001);
             serviceConfigOne.setWorkerCount(2);
             serviceConfigOne.setClientSessionTimeoutMillis(60 * 1000);
-            serviceConfigOne.setClientSessionEstablishmentTimeoutSeconds(3L);
+            serviceConfigOne.setClientSessionEstablishmentTimeoutSeconds(5L);
             membershipServiceOne = new MembershipServer(serviceConfigOne);
             membershipServiceOne.start();
             assertTrue(membershipServiceOne.isRunning());
@@ -527,10 +526,10 @@ public final class CohortMembershipTest {
             assertTrue(clientOne.isRunning());
 
             logger.info("[step-1] create namespace");
-            final String namespace = "testNodeDeath";
-            final NewNamespaceRequest newNamespaceRequestOne = NewNamespaceRequest.newBuilder()
+            String namespace = "testNodeDeath";
+            NewNamespaceRequest newNamespaceRequestOne = NewNamespaceRequest.newBuilder()
                     .setNamespace(namespace).build();
-            final NewNamespaceResponse newNamespaceResponseOne = clientOne.newNamespace(newNamespaceRequestOne);
+            NewNamespaceResponse newNamespaceResponseOne = clientOne.newNamespace(newNamespaceRequestOne);
             // assertEquals("/" + namespace, newNamespaceResponseOne.getPath());
             assertTrue(newNamespaceResponseOne.getSuccess());
 
@@ -584,23 +583,32 @@ public final class CohortMembershipTest {
 
             logger.info("[step-7] zk servers all drop dead");
             tiniZkCluster();
-            Thread.sleep(100L);
+            // Thread.sleep(100L);
 
             logger.info("[step-8] zk servers all come back to life");
             initZkCluster();
+            // since our zk ports are dynamic, update the connect string
+            serviceConfigOne.setConnectString(zkCluster.getConnectString());
 
             logger.info("[step-9] restart membership service");
             membershipServiceOne.stop();
             assertFalse(membershipServiceOne.isRunning());
+
+            membershipServiceOne = new MembershipServer(serviceConfigOne);
             membershipServiceOne.start();
             assertTrue(membershipServiceOne.isRunning());
-            Thread.sleep(1000L);
 
-            logger.info("[step-10] purge namespace");
+            logger.info("[step-10] create namespace");
+            namespace = "testNodeDeath";
+            newNamespaceRequestOne = NewNamespaceRequest.newBuilder()
+                    .setNamespace(namespace).build();
+            newNamespaceResponseOne = clientOne.newNamespace(newNamespaceRequestOne);
+            assertTrue(newNamespaceResponseOne.getSuccess());
+
+            logger.info("[step-11] purge namespace");
             final PurgeNamespaceRequest purgeNamespaceRequestOne = PurgeNamespaceRequest.newBuilder()
                     .setNamespace(namespace).build();
             final PurgeNamespaceResponse purgeNamespaceResponseOne = clientOne.purgeNamespace(purgeNamespaceRequestOne);
-            // assertEquals(namespace, purgeNamespaceResponseOne.getNamespace());
             assertTrue(purgeNamespaceResponseOne.getSuccess());
         } finally {
             if (clientOne != null && clientOne.isRunning()) {

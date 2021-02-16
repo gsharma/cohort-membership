@@ -171,20 +171,24 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         if (running.compareAndSet(true, false)) {
             ready.set(false);
             States state = null;
-            try {
-                for (final String namespace : trackedNamespaces) {
-                    logger.info("Remaining tree nodes:{}", flattenTree("/" + namespace));
+            if (serverProxy != null) {
+                if (serverProxy.getState().isConnected()) {
+                    try {
+                        for (final String namespace : trackedNamespaces) {
+                            logger.info("Remaining tree nodes:{}", flattenTree("/" + namespace));
+                        }
+                        serverProxy.close();
+                        state = serverProxy.getState();
+                        // logger.info("Server proxy connection state:{}, sessionId:{}", serverProxy.getState(), serverSessionId);
+                    } catch (KeeperException keeperProblem) {
+                        // mostly ignore
+                        logger.error(keeperProblem);
+                    } catch (InterruptedException problem) {
+                        Thread.currentThread().interrupt();
+                    } finally {
+                        serverProxy = null;
+                    }
                 }
-                serverProxy.close();
-                state = serverProxy.getState();
-                // logger.info("Server proxy connection state:{}, sessionId:{}", serverProxy.getState(), serverSessionId);
-            } catch (KeeperException keeperProblem) {
-                // mostly ignore
-                logger.error(keeperProblem);
-            } catch (InterruptedException problem) {
-                Thread.currentThread().interrupt();
-            } finally {
-                serverProxy = null;
             }
             // serverAddresses.clear();
             logger.info("Stopped ZkCohortMembership [{}], state:{}, sessionId:{}",
