@@ -43,7 +43,7 @@ public interface MembershipDelegate extends Lifecycle {
 
     // ReleaseLockResponse releaseLock(final ReleaseLockRequest request) throws MembershipServerException;
 
-    static MembershipDelegate getDelegate(final MembershipDelegateConfiguration configuration) {
+    static MembershipDelegate getDelegate(final MembershipServerConfiguration configuration) {
         return new ZkMembershipDelegate(configuration);
     }
 

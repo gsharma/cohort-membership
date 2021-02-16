@@ -21,6 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.github.membership.client.MembershipClient;
@@ -56,7 +57,6 @@ import com.github.membership.rpc.NodePersona;
 import com.github.membership.rpc.PurgeNamespaceRequest;
 import com.github.membership.rpc.PurgeNamespaceResponse;
 import com.github.membership.server.MembershipDelegate;
-import com.github.membership.server.MembershipDelegateConfiguration;
 import com.github.membership.server.MembershipServer;
 import com.github.membership.server.MembershipServerConfiguration;
 
@@ -80,6 +80,7 @@ public final class CohortMembershipTest {
             serviceConfig.setServerPort(5001);
             serviceConfig.setWorkerCount(2);
             serviceConfig.setClientSessionTimeoutMillis(60 * 1000);
+            serviceConfig.setClientSessionEstablishmentTimeoutSeconds(3L);
             membershipService = new MembershipServer(serviceConfig);
             membershipService.start();
             assertTrue(membershipService.isRunning());
@@ -319,6 +320,7 @@ public final class CohortMembershipTest {
             serviceConfigOne.setServerPort(4001);
             serviceConfigOne.setWorkerCount(2);
             serviceConfigOne.setClientSessionTimeoutMillis(60 * 1000);
+            serviceConfigOne.setClientSessionEstablishmentTimeoutSeconds(3L);
             membershipServiceOne = new MembershipServer(serviceConfigOne);
             membershipServiceOne.start();
             assertTrue(membershipServiceOne.isRunning());
@@ -333,6 +335,7 @@ public final class CohortMembershipTest {
             serviceConfigTwo.setServerPort(4002);
             serviceConfigTwo.setWorkerCount(2);
             serviceConfigTwo.setClientSessionTimeoutMillis(60 * 1000);
+            serviceConfigTwo.setClientSessionEstablishmentTimeoutSeconds(3L);
             membershipServiceTwo = new MembershipServer(serviceConfigTwo);
             membershipServiceTwo.start();
             assertTrue(membershipServiceTwo.isRunning());
@@ -502,12 +505,122 @@ public final class CohortMembershipTest {
         }
     }
 
+    @Ignore
+    @Test
+    public void testServiceDeath() throws Exception {
+        MembershipServer membershipServiceOne = null;
+        MembershipClient clientOne = null;
+        try {
+            final MembershipServerConfiguration serviceConfigOne = new MembershipServerConfiguration();
+            serviceConfigOne.setConnectString(zkCluster.getConnectString());
+            serviceConfigOne.setServerHost("localhost");
+            serviceConfigOne.setServerPort(4001);
+            serviceConfigOne.setWorkerCount(2);
+            serviceConfigOne.setClientSessionTimeoutMillis(60 * 1000);
+            serviceConfigOne.setClientSessionEstablishmentTimeoutSeconds(3L);
+            membershipServiceOne = new MembershipServer(serviceConfigOne);
+            membershipServiceOne.start();
+            assertTrue(membershipServiceOne.isRunning());
+
+            clientOne = MembershipClient.getClient("localhost", 4001, 2L, 1);
+            clientOne.start();
+            assertTrue(clientOne.isRunning());
+
+            logger.info("[step-1] create namespace");
+            final String namespace = "testNodeDeath";
+            final NewNamespaceRequest newNamespaceRequestOne = NewNamespaceRequest.newBuilder()
+                    .setNamespace(namespace).build();
+            final NewNamespaceResponse newNamespaceResponseOne = clientOne.newNamespace(newNamespaceRequestOne);
+            // assertEquals("/" + namespace, newNamespaceResponseOne.getPath());
+            assertTrue(newNamespaceResponseOne.getSuccess());
+
+            logger.info("[step-2] create nodeOne");
+            final String serverHostOne = "localhost";
+            final int serverPortOne = 8000;
+            final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
+                    .setNamespace(namespace)
+                    .setNodeId(UUID.randomUUID().toString())
+                    .setPersona(NodePersona.COMPUTE)
+                    .setAddress(serverHostOne + ":" + serverPortOne).build();
+            final NewNodeResponse newNodeResponseOne = clientOne.newNode(newNodeRequestOne);
+            final Node nodeOne = newNodeResponseOne.getNode();
+            assertNotNull(nodeOne);
+            assertEquals("/" + namespace + "/nodes/" + nodeOne.getId(), nodeOne.getPath());
+
+            logger.info("[step-3] create cohortTypeOne");
+            final NewCohortTypeRequest newCohortTypeRequestOne = NewCohortTypeRequest.newBuilder()
+                    .setNamespace(namespace)
+                    .setCohortType(CohortType.ONE).build();
+            final NewCohortTypeResponse newCohortTypeResponseOne = clientOne.newCohortType(newCohortTypeRequestOne);
+            assertTrue(newCohortTypeResponseOne.getSuccess());
+
+            logger.info("[step-4] create cohortOne");
+            final NewCohortRequest newCohortRequestOne = NewCohortRequest.newBuilder()
+                    .setNamespace(namespace)
+                    .setCohortId(UUID.randomUUID().toString())
+                    .setCohortType(CohortType.ONE).build();
+            final NewCohortResponse newCohortResponseOne = clientOne.newCohort(newCohortRequestOne);
+            final Cohort cohortOne = newCohortResponseOne.getCohort();
+            assertNotNull(cohortOne);
+            assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/" + cohortOne.getId(), cohortOne.getPath());
+
+            logger.info("[step-5] list cohorts, check for cohortOne");
+            final ListCohortsRequest listCohortsRequestOne = ListCohortsRequest.newBuilder()
+                    .setNamespace(namespace).build();
+            final ListCohortsResponse listCohortsResponseOne = clientOne.listCohorts(listCohortsRequestOne);
+            assertEquals(1, listCohortsResponseOne.getCohortsList().size());
+            assertTrue(listCohortsResponseOne.getCohortsList().contains(cohortOne));
+
+            logger.info("[step-6] memberOne joins cohortOne");
+            final JoinCohortRequest joinCohortRequestOne = JoinCohortRequest.newBuilder()
+                    .setNamespace(namespace)
+                    .setCohortId(cohortOne.getId())
+                    .setCohortType(cohortOne.getType())
+                    .setNodeId(nodeOne.getId())
+                    .setMemberId(UUID.randomUUID().toString()).build();
+            final String memberOneId = joinCohortRequestOne.getMemberId();
+            final JoinCohortResponse joinCohortResponseOne = clientOne.joinCohort(joinCohortRequestOne);
+            assertEquals(1, joinCohortResponseOne.getCohort().getMembersList().size());
+
+            logger.info("[step-7] zk servers all drop dead");
+            tiniZkCluster();
+            Thread.sleep(100L);
+
+            logger.info("[step-8] zk servers all come back to life");
+            initZkCluster();
+
+            logger.info("[step-9] restart membership service");
+            membershipServiceOne.stop();
+            assertFalse(membershipServiceOne.isRunning());
+            membershipServiceOne.start();
+            assertTrue(membershipServiceOne.isRunning());
+            Thread.sleep(1000L);
+
+            logger.info("[step-10] purge namespace");
+            final PurgeNamespaceRequest purgeNamespaceRequestOne = PurgeNamespaceRequest.newBuilder()
+                    .setNamespace(namespace).build();
+            final PurgeNamespaceResponse purgeNamespaceResponseOne = clientOne.purgeNamespace(purgeNamespaceRequestOne);
+            // assertEquals(namespace, purgeNamespaceResponseOne.getNamespace());
+            assertTrue(purgeNamespaceResponseOne.getSuccess());
+        } finally {
+            if (clientOne != null && clientOne.isRunning()) {
+                clientOne.stop();
+                assertFalse(clientOne.isRunning());
+            }
+            if (membershipServiceOne != null && membershipServiceOne.isRunning()) {
+                membershipServiceOne.stop();
+                assertFalse(membershipServiceOne.isRunning());
+            }
+        }
+    }
+
     @Test
     public void testMembershipServiceLCM() throws Exception {
         for (int iter = 0; iter < 3; iter++) {
-            final MembershipDelegateConfiguration configuration = new MembershipDelegateConfiguration();
+            final MembershipServerConfiguration configuration = new MembershipServerConfiguration();
             configuration.setConnectString(zkCluster.getConnectString());
             configuration.setClientSessionTimeoutMillis(60 * 1000);
+            configuration.setClientSessionEstablishmentTimeoutSeconds(3L);
             final MembershipDelegate membershipService = MembershipDelegate.getDelegate(configuration);
             membershipService.start();
             assertTrue(membershipService.isRunning());
@@ -518,7 +631,7 @@ public final class CohortMembershipTest {
     }
 
     @Before
-    public void initTestCluster() throws Exception {
+    public void initZkCluster() throws Exception {
         final long startNanos = System.nanoTime();
         logger.info("[step-0] init zk cluster");
         final List<InstanceSpec> instanceSpecs = new ArrayList<>();
@@ -550,7 +663,7 @@ public final class CohortMembershipTest {
     }
 
     @After
-    public void tiniTestCluster() throws Exception {
+    public void tiniZkCluster() throws Exception {
         if (zkCluster != null) {
             logger.info("Stopping zk cluster {}", zkCluster.getConnectString());
             zkCluster.close();
@@ -559,7 +672,7 @@ public final class CohortMembershipTest {
     }
 
     // @Before
-    public void initTestServer() throws Exception {
+    public void initZkServer() throws Exception {
         logger.info("[step-0] init zk server");
         final String serverHost = "localhost";
         final int serverPort = 4000;
@@ -572,7 +685,7 @@ public final class CohortMembershipTest {
     }
 
     // @After
-    public void tiniTestServer() throws Exception {
+    public void tiniZkServer() throws Exception {
         if (zkServer != null) {
             zkServer.close();
         }

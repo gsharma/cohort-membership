@@ -58,10 +58,7 @@ public final class MembershipServer implements Lifecycle {
                     final long startNanos = System.nanoTime();
                     logger.info("Starting MembershipServer [{}] at port {}", getIdentity(), serverConfig.getServerPort());
                     try {
-                        final MembershipDelegateConfiguration config = new MembershipDelegateConfiguration();
-                        config.setConnectString(serverConfig.getConnectString());
-                        config.setClientSessionTimeoutMillis(serverConfig.getClientSessionTimeoutMillis());
-                        delegate = MembershipDelegate.getDelegate(config);
+                        delegate = MembershipDelegate.getDelegate(serverConfig);
                         delegate.start();
 
                         serverExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(serverConfig.getWorkerCount(), new ThreadFactory() {

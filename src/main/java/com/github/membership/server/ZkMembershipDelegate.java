@@ -20,6 +20,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
@@ -41,7 +42,7 @@ import com.github.membership.server.MembershipServerException.Code;
 final class ZkMembershipDelegate implements MembershipDelegate {
     private static final Logger logger = LogManager.getLogger(ZkMembershipDelegate.class.getSimpleName());
 
-    private final MembershipDelegateConfiguration configuration;
+    private final MembershipServerConfiguration configuration;
     private final AtomicBoolean running;
     private final AtomicBoolean ready;
 
@@ -52,7 +53,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
     private Set<String> trackedNamespaces;
 
-    ZkMembershipDelegate(final MembershipDelegateConfiguration configuration) {
+    ZkMembershipDelegate(final MembershipServerConfiguration configuration) {
         this.running = new AtomicBoolean(false);
         this.ready = new AtomicBoolean(false);
 
@@ -80,6 +81,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
             final String connectString = configuration.getConnectString();
             final int sessionTimeoutMillis = configuration.getClientSessionTimeoutMillis(); // 60*1000 or more
+            final long sessionEstablishmentTimeoutSeconds = configuration.getClientSessionEstablishmentTimeoutSeconds();
 
             final CountDownLatch transitionedToConnected = new CountDownLatch(1);
             // final StringBuilder connectString = new StringBuilder();
@@ -101,10 +103,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                             // TODO: handle session expiration
                             logger.info("ZkCohortMembership zk session expired, sessionId:{}, servers:[{}]",
                                     getServerSessionId(), connectString);
+                            handleSessionExpiration();
                             break;
                         case Disconnected:
                             logger.info("ZkCohortMembership disconnected from zk, sessionId:{}, servers:[{}]",
                                     getServerSessionId(), connectString);
+                            handleServerDisconnection();
                             break;
                         case AuthFailed:
                             logger.info("ZkCohortMembership zk auth failed, sessionId:{}, servers:[{}]",
@@ -125,11 +129,14 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 serverProxy = new ZooKeeper(connectString, sessionTimeoutMillis, watcher);
                 logger.debug("Server proxy connection state:{}", serverProxy.getState());
                 // serverSessionId = serverProxy.getSessionId();
-                transitionedToConnected.await();
-                ready.set(true);
-                logger.info("Started ZkCohortMembership [{}], state:{}, sessionId:{}, connectedTo:[{}] in {} millis",
-                        getIdentity(), serverProxy.getState(), getServerSessionId(), connectString,
-                        TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
+                if (transitionedToConnected.await(sessionEstablishmentTimeoutSeconds, TimeUnit.SECONDS)) {
+                    ready.set(true);
+                    logger.info("Started ZkCohortMembership [{}], state:{}, sessionId:{}, connectedTo:[{}] in {} millis",
+                            getIdentity(), serverProxy.getState(), getServerSessionId(), connectString,
+                            TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
+                } else {
+                    throw new MembershipServerException(Code.MEMBERSHIP_INIT_FAILURE, "Failed to start membership service");
+                }
             } catch (final IOException zkConnectProblem) {
                 throw new MembershipServerException(Code.MEMBERSHIP_INIT_FAILURE, "Failed to start membership service");
             } catch (final InterruptedException zkConnectWaitProblem) {
@@ -139,6 +146,18 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to start an already running membership service");
         }
+    }
+
+    // TODO
+    private void handleSessionExpiration() {
+        logger.info("ZkCohortMembership handling session expiration, sessionId:{}, servers:[{}]",
+                getServerSessionId(), configuration.getConnectString());
+    }
+
+    // TODO
+    private void handleServerDisconnection() {
+        logger.info("ZkCohortMembership handling server disconnection, sessionId:{}, servers:[{}]",
+                getServerSessionId(), configuration.getConnectString());
     }
 
     private long getServerSessionId() {
@@ -494,22 +513,24 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     @Override
                     public void process(final WatchedEvent watchedEvent) {
                         logger.debug("Node changed, {}", watchedEvent);
-                        switch (watchedEvent.getType()) {
-                            case NodeCreated:
-                                logger.info("Node added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
-                                break;
-                            case NodeDeleted:
-                                logger.info("Node left or died, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
-                                break;
-                            case NodeDataChanged:
-                                logger.info("Node data changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
-                                break;
-                            case NodeChildrenChanged:
-                                logger.info("Node changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
-                                break;
-                            default:
-                                logger.info("Node change triggered, sessionId:{}, {}", getServerSessionId(), watchedEvent);
-                                break;
+                        if (watchedEvent.getType() != EventType.None) {
+                            switch (watchedEvent.getType()) {
+                                case NodeCreated:
+                                    logger.info("Node added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    break;
+                                case NodeDeleted:
+                                    logger.info("Node left or died, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    break;
+                                case NodeDataChanged:
+                                    logger.info("Node data changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    break;
+                                case NodeChildrenChanged:
+                                    logger.info("Node changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    break;
+                                default:
+                                    logger.info("Node change triggered, sessionId:{}, {}", getServerSessionId(), watchedEvent);
+                                    break;
+                            }
                         }
                     }
                 };
