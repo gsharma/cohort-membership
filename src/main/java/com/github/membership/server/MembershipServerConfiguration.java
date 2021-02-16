@@ -5,6 +5,7 @@ public final class MembershipServerConfiguration {
     private String serverHost;
     private int serverPort;
     private int workerCount;
+    private int clientSessionTimeoutMillis;
 
     public String getConnectString() {
         return connectString;
@@ -38,9 +39,17 @@ public final class MembershipServerConfiguration {
         this.workerCount = workerCount;
     }
 
+    public int getClientSessionTimeoutMillis() {
+        return clientSessionTimeoutMillis;
+    }
+
+    public void setClientSessionTimeoutMillis(int clientSessionTimeoutMillis) {
+        this.clientSessionTimeoutMillis = clientSessionTimeoutMillis;
+    }
+
     @Override
     public String toString() {
         return "MembershipServerConfiguration [connectString=" + connectString + ", serverHost=" + serverHost + ", serverPort=" + serverPort
-                + ", workerCount=" + workerCount + "]";
+                + ", workerCount=" + workerCount + ", clientSessionTimeoutMillis=" + clientSessionTimeoutMillis + "]";
     }
 }

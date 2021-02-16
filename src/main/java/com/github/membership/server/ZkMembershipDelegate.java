@@ -48,7 +48,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     private String identity;
 
     private ZooKeeper serverProxy;
-    private long serverSessionId;
+    private volatile long serverSessionId;
 
     private Set<String> trackedNamespaces;
 
@@ -72,44 +72,63 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     public void start() throws MembershipServerException {
         identity = UUID.randomUUID().toString();
         logger.info("Starting ZkCohortMembership [{}]", getIdentity());
+        logger.debug(configuration.toString());
         if (running.compareAndSet(false, true)) {
             final long startNanos = System.nanoTime();
             serverProxy = null;
             serverSessionId = 0L;
+
+            final String connectString = configuration.getConnectString();
+            final int sessionTimeoutMillis = configuration.getClientSessionTimeoutMillis(); // 60*1000 or more
 
             final CountDownLatch transitionedToConnected = new CountDownLatch(1);
             // final StringBuilder connectString = new StringBuilder();
             // for (final InetSocketAddress serverAddress : serverAddresses) {
             // connectString.append(serverAddress.getHostName()).append(':').append(serverAddress.getPort()).append(',');
             // }
-            final int sessionTimeoutMillis = 2000;
+            // Handle zk connection states
             final Watcher watcher = new Watcher() {
                 @Override
                 public void process(final WatchedEvent watchedEvent) {
                     switch (watchedEvent.getState()) {
                         case SyncConnected:
+                            serverSessionId = serverProxy.getSessionId();
+                            logger.info("ZkCohortMembership connected to zk, sessionId:{}, servers:[{}]",
+                                    getServerSessionId(), connectString);
                             transitionedToConnected.countDown();
                             break;
                         case Expired:
                             // TODO: handle session expiration
-                            logger.info("Proxy session expired, {}", watchedEvent);
+                            logger.info("ZkCohortMembership zk session expired, sessionId:{}, servers:[{}]",
+                                    getServerSessionId(), connectString);
+                            break;
+                        case Disconnected:
+                            logger.info("ZkCohortMembership disconnected from zk, sessionId:{}, servers:[{}]",
+                                    getServerSessionId(), connectString);
+                            break;
+                        case AuthFailed:
+                            logger.info("ZkCohortMembership zk auth failed, sessionId:{}, servers:[{}]",
+                                    getServerSessionId(), connectString);
+                            break;
+                        case Closed:
+                            logger.info("ZkCohortMembership zk session closed, sessionId:{}, servers:[{}]",
+                                    getServerSessionId(), connectString);
                             break;
                         default:
-                            logger.info("Proxy encountered {}", watchedEvent);
+                            logger.info("ZkCohortMembership encountered:{}, sessionId:{}, servers:[{}]",
+                                    watchedEvent, getServerSessionId(), connectString);
                             break;
                     }
                 }
             };
             try {
-                final String connectString = configuration.getConnectString();
                 serverProxy = new ZooKeeper(connectString, sessionTimeoutMillis, watcher);
                 logger.debug("Server proxy connection state:{}", serverProxy.getState());
+                // serverSessionId = serverProxy.getSessionId();
                 transitionedToConnected.await();
-
-                serverSessionId = serverProxy.getSessionId();
                 ready.set(true);
                 logger.info("Started ZkCohortMembership [{}], state:{}, sessionId:{}, connectedTo:[{}] in {} millis",
-                        getIdentity(), serverProxy.getState(), serverSessionId, connectString,
+                        getIdentity(), serverProxy.getState(), getServerSessionId(), connectString,
                         TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
             } catch (final IOException zkConnectProblem) {
                 throw new MembershipServerException(Code.MEMBERSHIP_INIT_FAILURE, "Failed to start membership service");
@@ -122,10 +141,14 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
     }
 
+    private long getServerSessionId() {
+        return serverSessionId;
+    }
+
     @Override
     public void stop() throws MembershipServerException {
         logger.info("Stopping ZkCohortMembership [{}], state:{}, sessionId:{}",
-                getIdentity(), serverProxy.getState(), serverSessionId);
+                getIdentity(), serverProxy.getState(), getServerSessionId());
         if (running.compareAndSet(true, false)) {
             ready.set(false);
             States state = null;
@@ -146,7 +169,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             }
             // serverAddresses.clear();
             logger.info("Stopped ZkCohortMembership [{}], state:{}, sessionId:{}",
-                    getIdentity(), state, serverSessionId);
+                    getIdentity(), state, getServerSessionId());
         } else {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to stop an already stopped membership service");
@@ -359,19 +382,19 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.debug("Membership changed, {}", watchedEvent);
                         switch (watchedEvent.getType()) {
                             case NodeCreated:
-                                logger.info("Member added, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                logger.info("Member added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                                 break;
                             case NodeDeleted:
-                                logger.info("Member left or died, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                logger.info("Member left or died, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                                 break;
                             case NodeDataChanged:
-                                logger.info("Member data changed, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                logger.info("Member data changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                                 break;
                             case NodeChildrenChanged:
-                                logger.info("Membership changed, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                logger.info("Membership changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                                 break;
                             default:
-                                logger.info("Membership change triggered, sessionId:{}, {}", serverSessionId, watchedEvent);
+                                logger.info("Membership change triggered, sessionId:{}, {}", getServerSessionId(), watchedEvent);
                                 break;
                         }
                     }
@@ -473,19 +496,19 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.debug("Node changed, {}", watchedEvent);
                         switch (watchedEvent.getType()) {
                             case NodeCreated:
-                                logger.info("Node added, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                logger.info("Node added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                                 break;
                             case NodeDeleted:
-                                logger.info("Node left or died, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                logger.info("Node left or died, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                                 break;
                             case NodeDataChanged:
-                                logger.info("Node data changed, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                logger.info("Node data changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                                 break;
                             case NodeChildrenChanged:
-                                logger.info("Node changed, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                                logger.info("Node changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                                 break;
                             default:
-                                logger.info("Node change triggered, sessionId:{}, {}", serverSessionId, watchedEvent);
+                                logger.info("Node change triggered, sessionId:{}, {}", getServerSessionId(), watchedEvent);
                                 break;
                         }
                     }
@@ -601,19 +624,19 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     // logger.info("Membership changed, {}", watchedEvent);
                     switch (watchedEvent.getType()) {
                         case NodeCreated:
-                            logger.info("Member added, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                            logger.info("Member added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                             break;
                         case NodeDeleted:
-                            logger.info("Member left or died, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                            logger.info("Member left or died, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                             break;
                         case NodeDataChanged:
-                            logger.info("Member data changed, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                            logger.info("Member data changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                             break;
                         case NodeChildrenChanged:
-                            logger.info("Membership changed, sessionId:{}, {}", serverSessionId, watchedEvent.getPath());
+                            logger.info("Membership changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                             break;
                         default:
-                            logger.info("Membership change triggered, sessionId:{}, {}", serverSessionId, watchedEvent);
+                            logger.info("Membership change triggered, sessionId:{}, {}", getServerSessionId(), watchedEvent);
                             break;
                     }
                 }

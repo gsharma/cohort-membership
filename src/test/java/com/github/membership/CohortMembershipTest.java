@@ -79,6 +79,7 @@ public final class CohortMembershipTest {
             serviceConfig.setServerHost("localhost");
             serviceConfig.setServerPort(5001);
             serviceConfig.setWorkerCount(2);
+            serviceConfig.setClientSessionTimeoutMillis(60 * 1000);
             membershipService = new MembershipServer(serviceConfig);
             membershipService.start();
             assertTrue(membershipService.isRunning());
@@ -317,6 +318,7 @@ public final class CohortMembershipTest {
             serviceConfigOne.setServerHost("localhost");
             serviceConfigOne.setServerPort(4001);
             serviceConfigOne.setWorkerCount(2);
+            serviceConfigOne.setClientSessionTimeoutMillis(60 * 1000);
             membershipServiceOne = new MembershipServer(serviceConfigOne);
             membershipServiceOne.start();
             assertTrue(membershipServiceOne.isRunning());
@@ -330,6 +332,7 @@ public final class CohortMembershipTest {
             serviceConfigTwo.setServerHost("localhost");
             serviceConfigTwo.setServerPort(4002);
             serviceConfigTwo.setWorkerCount(2);
+            serviceConfigTwo.setClientSessionTimeoutMillis(60 * 1000);
             membershipServiceTwo = new MembershipServer(serviceConfigTwo);
             membershipServiceTwo.start();
             assertTrue(membershipServiceTwo.isRunning());
@@ -504,6 +507,7 @@ public final class CohortMembershipTest {
         for (int iter = 0; iter < 3; iter++) {
             final MembershipDelegateConfiguration configuration = new MembershipDelegateConfiguration();
             configuration.setConnectString(zkCluster.getConnectString());
+            configuration.setClientSessionTimeoutMillis(60 * 1000);
             final MembershipDelegate membershipService = MembershipDelegate.getDelegate(configuration);
             membershipService.start();
             assertTrue(membershipService.isRunning());

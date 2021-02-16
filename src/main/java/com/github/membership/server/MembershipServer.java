@@ -60,6 +60,7 @@ public final class MembershipServer implements Lifecycle {
                     try {
                         final MembershipDelegateConfiguration config = new MembershipDelegateConfiguration();
                         config.setConnectString(serverConfig.getConnectString());
+                        config.setClientSessionTimeoutMillis(serverConfig.getClientSessionTimeoutMillis());
                         delegate = MembershipDelegate.getDelegate(config);
                         delegate.start();
 
