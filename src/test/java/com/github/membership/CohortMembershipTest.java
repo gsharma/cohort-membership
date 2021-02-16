@@ -642,6 +642,43 @@ public final class CohortMembershipTest {
         }
     }
 
+    @Test
+    public void testMembershipClientLCM() throws Exception {
+        MembershipServer membershipServer = null;
+        MembershipClient membershipClient = null;
+        try {
+            final MembershipServerConfiguration configuration = new MembershipServerConfiguration();
+            configuration.setConnectString(zkCluster.getConnectString());
+            configuration.setServerHost("localhost");
+            configuration.setServerPort(6001);
+            configuration.setWorkerCount(2);
+            configuration.setClientSessionTimeoutMillis(60 * 1000);
+            configuration.setClientSessionEstablishmentTimeoutSeconds(3L);
+            membershipServer = new MembershipServer(configuration);
+            membershipServer.start();
+            assertTrue(membershipServer.isRunning());
+
+            membershipClient = MembershipClient.getClient("localhost", 6001, 2L, 1);
+            membershipClient.start();
+            assertTrue(membershipClient.isRunning());
+
+            membershipClient.stop();
+            assertFalse(membershipClient.isRunning());
+
+            membershipClient.start();
+            assertTrue(membershipClient.isRunning());
+        } finally {
+            if (membershipClient != null && membershipClient.isRunning()) {
+                membershipClient.stop();
+                assertFalse(membershipClient.isRunning());
+            }
+            if (membershipServer != null && membershipServer.isRunning()) {
+                membershipServer.stop();
+                assertFalse(membershipServer.isRunning());
+            }
+        }
+    }
+
     @Before
     public void initZkCluster() throws Exception {
         final long startNanos = System.nanoTime();

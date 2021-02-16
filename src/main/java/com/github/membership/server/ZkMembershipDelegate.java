@@ -76,6 +76,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         logger.debug(configuration.toString());
         if (running.compareAndSet(false, true)) {
             final long startNanos = System.nanoTime();
+            ready.set(false);
             serverProxy = null;
             serverSessionId = 0L;
 
@@ -94,6 +95,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 public void process(final WatchedEvent watchedEvent) {
                     switch (watchedEvent.getState()) {
                         case SyncConnected:
+                        case ConnectedReadOnly:
                             serverSessionId = serverProxy.getSessionId();
                             logger.info("ZkCohortMembership connected to zk, sessionId:{}, servers:[{}]",
                                     getServerSessionId(), connectString);
