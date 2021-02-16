@@ -616,17 +616,26 @@ public final class CohortMembershipTest {
 
     @Test
     public void testMembershipServiceLCM() throws Exception {
-        for (int iter = 0; iter < 3; iter++) {
+        for (int iter = 0; iter < 2; iter++) {
             final MembershipServerConfiguration configuration = new MembershipServerConfiguration();
             configuration.setConnectString(zkCluster.getConnectString());
+            configuration.setServerHost("localhost");
+            configuration.setServerPort(6001);
+            configuration.setWorkerCount(2);
             configuration.setClientSessionTimeoutMillis(60 * 1000);
             configuration.setClientSessionEstablishmentTimeoutSeconds(3L);
-            final MembershipDelegate membershipService = MembershipDelegate.getDelegate(configuration);
-            membershipService.start();
-            assertTrue(membershipService.isRunning());
+            final MembershipServer membershipServer = new MembershipServer(configuration);
+            membershipServer.start();
+            assertTrue(membershipServer.isRunning());
 
-            membershipService.stop();
-            assertFalse(membershipService.isRunning());
+            membershipServer.stop();
+            assertFalse(membershipServer.isRunning());
+
+            membershipServer.start();
+            assertTrue(membershipServer.isRunning());
+
+            membershipServer.stop();
+            assertFalse(membershipServer.isRunning());
         }
     }
 

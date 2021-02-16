@@ -87,7 +87,7 @@ public final class MembershipServer implements Lifecycle {
                 }
             };
             serverThread.start();
-            if (serverReadyLatch.await(2L, TimeUnit.SECONDS)) {
+            if (serverReadyLatch.await(5L, TimeUnit.SECONDS)) {
                 ready.set(true);
             } else {
                 logger.error("Failed to start MembershipServer [{}] at port", getIdentity(), serverConfig.getServerPort());

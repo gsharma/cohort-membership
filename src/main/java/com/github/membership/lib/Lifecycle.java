@@ -17,4 +17,11 @@ public interface Lifecycle {
     // Check if this instance is running
     boolean isRunning();
 
+    // default void restart() throws Exception {
+    // if (isRunning()) {
+    // stop();
+    // }
+    // start();
+    // }
+
 }
