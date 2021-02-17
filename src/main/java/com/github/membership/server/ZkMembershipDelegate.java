@@ -27,6 +27,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooKeeper.States;
 import org.apache.zookeeper.data.Stat;
 
+import com.github.membership.lib.Lifecycle;
 import com.github.membership.rpc.Cohort;
 import com.github.membership.rpc.CohortType;
 import com.github.membership.rpc.Member;
@@ -114,7 +115,11 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         case Disconnected:
                             logger.info("ZkCohortMembership disconnected from zk, sessionId:{}, servers:[{}]",
                                     getServerSessionId(), connectString);
-                            handleServerDisconnection();
+                            try {
+                                handleServerDisconnection();
+                            } catch (MembershipServerException problem) {
+                                logger.error("handleServerDisconnection encountered a problem", problem);
+                            }
                             break;
                         case AuthFailed:
                             logger.info("ZkCohortMembership zk auth failed, sessionId:{}, servers:[{}]",
@@ -158,15 +163,32 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     private void handleSessionExpiration() throws MembershipServerException {
         logger.info("ZkCohortMembership handling session expiration, sessionId:{}, servers:[{}]",
                 getServerSessionId(), configuration.getConnectString());
-        // potentially dangerous
-        stop();
-        start();
+        if (isRunning()) {
+            // potentially dangerous
+            // consider retries
+            stop();
+            start();
+            if (!isRunning()) {
+                logger.warn("ZkCohortMembership failed to restart");
+            }
+        }
     }
 
     // TODO
-    private void handleServerDisconnection() {
+    private void handleServerDisconnection() throws MembershipServerException {
         logger.info("ZkCohortMembership handling server disconnection, sessionId:{}, servers:[{}]",
                 getServerSessionId(), configuration.getConnectString());
+        if (isRunning()) {
+            // TODO: figure out if self-healing is even worth it. A safer option
+            // is to propagate this upto client and let them decide.
+            // potentially dangerous
+            // consider retries
+            // stop();
+            // start();
+            // if (!isRunning()) {
+            // logger.warn("ZkCohortMembership failed to restart");
+            // }
+        }
     }
 
     private long getServerSessionId() {
@@ -675,7 +697,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     }
                 }
             };
-            // serverProxy.exists(memberChildPath, membershipChangedWatcher);
+            serverProxy.exists(memberChildPath, membershipChangedWatcher);
             // serverProxy.getChildren(cohortMembersPath, membershipChangedWatcher);
 
             cohort = describeCohort(namespace, cohortId, cohortType);
@@ -927,6 +949,37 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
         }
         return success;
+    }
+
+    // Responsible for replenishing watches that have been triggered and cleared
+    private static final class WatcherReplenisher implements Lifecycle {
+        private final AtomicBoolean running;
+        private String identity;
+
+        private WatcherReplenisher() {
+            running = new AtomicBoolean(false);
+        }
+
+        @Override
+        public String getIdentity() {
+            return identity;
+        }
+
+        @Override
+        public void start() throws Exception {
+            // TODO
+            identity = UUID.randomUUID().toString();
+        }
+
+        @Override
+        public void stop() throws Exception {
+            // TODO
+        }
+
+        @Override
+        public boolean isRunning() {
+            return running.get();
+        }
     }
 
     private static boolean checkIdempotency(final KeeperException keeperException) {
