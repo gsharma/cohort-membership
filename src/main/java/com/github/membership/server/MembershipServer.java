@@ -76,34 +76,43 @@ public final class MembershipServer implements Lifecycle {
                 @Override
                 public void run() {
                     final long startNanos = System.nanoTime();
-                    logger.info("Starting MembershipServer [{}] at port {}", getIdentity(), serverConfig.getServerPort());
+                    logger.info("Starting MembershipServer [{}] at port {}", getIdentity(),
+                            serverConfig.getServerPort());
                     try {
                         delegate = MembershipDelegate.getDelegate(serverConfig);
                         delegate.start();
 
-                        serverExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(serverConfig.getWorkerCount(), new ThreadFactory() {
-                            private final AtomicInteger threadIter = new AtomicInteger();
-                            private final String threadNamePattern = "membership-server-%d";
+                        serverExecutor = (ThreadPoolExecutor) Executors
+                                .newFixedThreadPool(serverConfig.getWorkerCount(), new ThreadFactory() {
+                                    private final AtomicInteger threadIter = new AtomicInteger();
+                                    private final String threadNamePattern = "membership-server-%d";
 
-                            @Override
-                            public Thread newThread(final Runnable runnable) {
-                                final Thread worker = new Thread(runnable, String.format(threadNamePattern, threadIter.incrementAndGet()));
-                                worker.setDaemon(true);
-                                return worker;
-                            }
-                        });
+                                    @Override
+                                    public Thread newThread(final Runnable runnable) {
+                                        final Thread worker = new Thread(runnable,
+                                                String.format(threadNamePattern, threadIter.incrementAndGet()));
+                                        worker.setDaemon(true);
+                                        return worker;
+                                    }
+                                });
                         service = new MembershipServiceImpl();
                         service.setDelegate(delegate);
-                        server = NettyServerBuilder.forAddress(new InetSocketAddress(serverConfig.getServerHost(), serverConfig.getServerPort()))
-                                .addService(service).intercept(TransmitStatusRuntimeExceptionInterceptor.instance()).executor(serverExecutor).build();
+                        server = NettyServerBuilder
+                                .forAddress(new InetSocketAddress(serverConfig.getServerHost(),
+                                        serverConfig.getServerPort()))
+                                .addService(service).intercept(TransmitStatusRuntimeExceptionInterceptor.instance())
+                                .executor(serverExecutor).build();
                         server.start();
                         serverReadyLatch.countDown();
-                        logger.info("Started MembershipServer [{}] at port {} in {} millis", getIdentity(), serverConfig.getServerPort(),
+                        logger.info("Started MembershipServer [{}] at port {} in {} millis", getIdentity(),
+                                serverConfig.getServerPort(),
                                 TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
                         server.awaitTermination();
                     } catch (Exception serverProblem) {
-                        logger.error("Failed to start MembershipServer [{}] at port {} in {} millis", getIdentity(), serverConfig.getServerPort(),
-                                TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS), serverProblem);
+                        logger.error("Failed to start MembershipServer [{}] at port {} in {} millis", getIdentity(),
+                                serverConfig.getServerPort(),
+                                TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS),
+                                serverProblem);
                     }
                 }
             };
@@ -111,7 +120,8 @@ public final class MembershipServer implements Lifecycle {
             if (serverReadyLatch.await(5L, TimeUnit.SECONDS)) {
                 ready.set(true);
             } else {
-                logger.error("Failed to start MembershipServer [{}] at port", getIdentity(), serverConfig.getServerPort());
+                logger.error("Failed to start MembershipServer [{}] at port", getIdentity(),
+                        serverConfig.getServerPort());
             }
         } else {
             logger.error("Invalid attempt to start an already running MembershipServer");

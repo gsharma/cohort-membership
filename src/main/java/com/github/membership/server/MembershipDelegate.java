@@ -15,23 +15,27 @@ public interface MembershipDelegate extends Lifecycle {
 
     boolean newCohortType(final String namespace, final CohortType cohortType) throws MembershipServerException;
 
-    Cohort newCohort(final String namespace, final String cohortId, final CohortType cohortType) throws MembershipServerException;
+    Cohort newCohort(final String namespace, final String cohortId, final CohortType cohortType)
+            throws MembershipServerException;
 
-    Node newNode(final String namespace, final String nodeId, final NodePersona persona, final String address) throws MembershipServerException;
+    Node newNode(final String namespace, final String nodeId, final NodePersona persona, final String address)
+            throws MembershipServerException;
 
     List<Node> listNodes(final String namespace) throws MembershipServerException;
 
     List<Cohort> listCohorts(final String namespace) throws MembershipServerException;
 
-    Cohort joinCohort(final String namespace, final String memberId, final String cohortId, final CohortType cohortType, final String nodeId)
+    Cohort joinCohort(final String namespace, final String memberId, final String cohortId, final CohortType cohortType,
+            final String nodeId) throws MembershipServerException;
+
+    Cohort describeCohort(final String namespace, final String cohortId, final CohortType cohortType)
             throws MembershipServerException;
 
-    Cohort describeCohort(final String namespace, final String cohortId, final CohortType cohortType) throws MembershipServerException;
+    boolean leaveCohort(final String namespace, final String cohortId, final CohortType cohortType,
+            final String memberId) throws MembershipServerException;
 
-    boolean leaveCohort(final String namespace, final String cohortId, final CohortType cohortType, final String memberId)
+    boolean deleteCohort(final String namespace, final String cohortId, final CohortType cohortType)
             throws MembershipServerException;
-
-    boolean deleteCohort(final String namespace, final String cohortId, final CohortType cohortType) throws MembershipServerException;
 
     boolean deleteCohortType(final String namespace, final CohortType cohortType) throws MembershipServerException;
 
@@ -39,9 +43,11 @@ public interface MembershipDelegate extends Lifecycle {
 
     boolean purgeNamespace(final String namespace) throws MembershipServerException;
 
-    // AcquireLockResponse acquireLock(final AcquireLockRequest request) throws MembershipServerException;
+    // AcquireLockResponse acquireLock(final AcquireLockRequest request) throws
+    // MembershipServerException;
 
-    // ReleaseLockResponse releaseLock(final ReleaseLockRequest request) throws MembershipServerException;
+    // ReleaseLockResponse releaseLock(final ReleaseLockRequest request) throws
+    // MembershipServerException;
 
     static MembershipDelegate getDelegate(final MembershipServerConfiguration configuration) {
         return new ZkMembershipDelegate(configuration);

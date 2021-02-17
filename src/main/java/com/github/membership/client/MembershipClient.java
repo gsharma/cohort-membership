@@ -59,8 +59,9 @@ public interface MembershipClient extends Lifecycle {
 
     PurgeNamespaceResponse purgeNamespace(final PurgeNamespaceRequest request) throws MembershipClientException;
 
-    static MembershipClient getClient(final String serverHost, final int serverPort, final long serverDeadlineSeconds, final int workerCount) {
-        return new MembershipClientImpl(serverHost, serverPort, serverDeadlineSeconds, workerCount);
+    static MembershipClient getClient(final String serverHost, final int serverPort, final long serverDeadlineSeconds,
+	    final int workerCount) {
+	return new MembershipClientImpl(serverHost, serverPort, serverDeadlineSeconds, workerCount);
     }
 
 }

@@ -59,9 +59,10 @@ public final class MembershipServerConfiguration {
 
     @Override
     public String toString() {
-        return "MembershipServerConfiguration [connectString=" + connectString + ", serverHost=" + serverHost + ", serverPort=" + serverPort
-                + ", workerCount=" + workerCount + ", clientSessionTimeoutMillis=" + clientSessionTimeoutMillis
-                + ", clientSessionEstablishmentTimeoutSeconds=" + clientSessionEstablishmentTimeoutSeconds + "]";
+        return "MembershipServerConfiguration [connectString=" + connectString + ", serverHost=" + serverHost
+                + ", serverPort=" + serverPort + ", workerCount=" + workerCount + ", clientSessionTimeoutMillis="
+                + clientSessionTimeoutMillis + ", clientSessionEstablishmentTimeoutSeconds="
+                + clientSessionEstablishmentTimeoutSeconds + "]";
     }
 
 }

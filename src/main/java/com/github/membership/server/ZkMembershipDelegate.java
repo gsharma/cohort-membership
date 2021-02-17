@@ -1,7 +1,6 @@
 package com.github.membership.server;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,12 +16,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooKeeper.States;
 import org.apache.zookeeper.data.Stat;
@@ -130,8 +127,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                     getServerSessionId(), connectString);
                             break;
                         default:
-                            logger.info("ZkCohortMembership encountered:{}, sessionId:{}, servers:[{}]",
-                                    watchedEvent, getServerSessionId(), connectString);
+                            logger.info("ZkCohortMembership encountered:{}, sessionId:{}, servers:[{}]", watchedEvent,
+                                    getServerSessionId(), connectString);
                             break;
                     }
                 }
@@ -142,11 +139,13 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 // serverSessionId = serverProxy.getSessionId();
                 if (transitionedToConnected.await(sessionEstablishmentTimeoutSeconds, TimeUnit.SECONDS)) {
                     ready.set(true);
-                    logger.info("Started ZkCohortMembership [{}], state:{}, sessionId:{}, connectedTo:[{}] in {} millis",
+                    logger.info(
+                            "Started ZkCohortMembership [{}], state:{}, sessionId:{}, connectedTo:[{}] in {} millis",
                             getIdentity(), serverProxy.getState(), getServerSessionId(), connectString,
                             TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
                 } else {
-                    throw new MembershipServerException(Code.MEMBERSHIP_INIT_FAILURE, "Failed to start membership service");
+                    throw new MembershipServerException(Code.MEMBERSHIP_INIT_FAILURE,
+                            "Failed to start membership service");
                 }
             } catch (final IOException zkConnectProblem) {
                 throw new MembershipServerException(Code.MEMBERSHIP_INIT_FAILURE, "Failed to start membership service");
@@ -161,8 +160,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
     // TODO
     private void handleSessionExpiration() throws MembershipServerException {
-        logger.info("ZkCohortMembership handling session expiration, sessionId:{}, servers:[{}]",
-                getServerSessionId(), configuration.getConnectString());
+        logger.info("ZkCohortMembership handling session expiration, sessionId:{}, servers:[{}]", getServerSessionId(),
+                configuration.getConnectString());
         if (isRunning()) {
             // potentially dangerous
             // consider retries
@@ -197,8 +196,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
     @Override
     public void stop() throws MembershipServerException {
-        logger.info("Stopping ZkCohortMembership [{}], state:{}, sessionId:{}",
-                getIdentity(), serverProxy.getState(), getServerSessionId());
+        logger.info("Stopping ZkCohortMembership [{}], state:{}, sessionId:{}", getIdentity(), serverProxy.getState(),
+                getServerSessionId());
         if (running.compareAndSet(true, false)) {
             ready.set(false);
             States state = null;
@@ -210,7 +209,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         }
                         serverProxy.close();
                         state = serverProxy.getState();
-                        // logger.info("Server proxy connection state:{}, sessionId:{}", serverProxy.getState(), serverSessionId);
+                        // logger.info("Server proxy connection state:{}, sessionId:{}",
+                        // serverProxy.getState(), serverSessionId);
                     } catch (KeeperException keeperProblem) {
                         // mostly ignore
                         logger.error(keeperProblem);
@@ -222,8 +222,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 }
             }
             // serverAddresses.clear();
-            logger.info("Stopped ZkCohortMembership [{}], state:{}, sessionId:{}",
-                    getIdentity(), state, getServerSessionId());
+            logger.info("Stopped ZkCohortMembership [{}], state:{}, sessionId:{}", getIdentity(), state,
+                    getServerSessionId());
         } else {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to stop an already stopped membership service");
@@ -244,7 +244,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
         boolean success = false;
         try {
@@ -255,22 +256,22 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             if (serverProxy.exists(namespacePath, false) == null) {
                 logger.debug("Creating namespace {}", namespacePath);
                 final Stat namespaceStat = new Stat();
-                namespacePath = serverProxy.create(namespacePath, null,
-                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, namespaceStat);
+                namespacePath = serverProxy.create(namespacePath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                        CreateMode.PERSISTENT, namespaceStat);
                 logger.debug("namespace:{}, stat:{}", namespacePath, namespaceStat);
                 logger.info("Created namespace:{}, zxid:{}", namespacePath, namespaceStat.getCzxid());
 
                 // create cohorts root node
                 final Stat cohortRootStat = new Stat();
-                final String cohortRootPath = serverProxy.create(namespacePath + "/cohorts", null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                        CreateMode.PERSISTENT, cohortRootStat);
+                final String cohortRootPath = serverProxy.create(namespacePath + "/cohorts", null,
+                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, cohortRootStat);
                 logger.debug("cohorts root:{}, stat:{}", cohortRootPath, cohortRootStat);
                 logger.info("Created cohorts root:{}, zxid:{}", cohortRootPath, cohortRootStat.getCzxid());
 
                 // create nodes root node
                 final Stat nodeRootStat = new Stat();
-                final String nodeRootPath = serverProxy.create(namespacePath + "/nodes", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT,
-                        nodeRootStat);
+                final String nodeRootPath = serverProxy.create(namespacePath + "/nodes", null,
+                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, nodeRootStat);
                 logger.debug("nodes root:{}, stat:{}", nodeRootPath, nodeRootStat);
                 logger.info("Created nodes root:{}, zxid:{}", nodeRootPath, nodeRootStat.getCzxid());
 
@@ -302,7 +303,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
         boolean success = false;
         try {
@@ -342,7 +344,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
         boolean success = false;
         try {
@@ -354,8 +357,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             if (serverProxy.exists(cohortTypePath, false) == null) {
                 logger.debug("Creating cohort type {}", cohortTypePath);
                 final Stat cohortTypeStat = new Stat();
-                cohortTypePath = serverProxy.create(cohortTypePath, null,
-                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, cohortTypeStat);
+                cohortTypePath = serverProxy.create(cohortTypePath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                        CreateMode.PERSISTENT, cohortTypeStat);
                 success = true;
                 logger.debug("cohort type:{}, stat:{}", cohortTypePath, cohortTypeStat);
                 logger.info("Created cohort type:{}, zxid:{}", cohortTypePath, cohortTypeStat.getCzxid());
@@ -377,7 +380,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public Cohort newCohort(final String namespace, final String cohortId, final CohortType cohortType) throws MembershipServerException {
+    public Cohort newCohort(final String namespace, final String cohortId, final CohortType cohortType)
+            throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -385,7 +389,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
         Cohort cohort = null;
         try {
@@ -402,8 +407,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             if (serverProxy.exists(cohortChildPath, false) == null) {
                 logger.debug("Creating cohort {}", cohortChildPath);
                 final Stat cohortStat = new Stat();
-                cohortChildPath = serverProxy.create(cohortChildPath, null,
-                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, cohortStat);
+                cohortChildPath = serverProxy.create(cohortChildPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                        CreateMode.PERSISTENT, cohortStat);
                 logger.debug("cohort:{}, stat:{}", cohortChildPath, cohortStat);
                 logger.info("Created cohort:{}, zxid:{}", cohortChildPath, cohortStat.getCzxid());
 
@@ -415,15 +420,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 String membersChildPath = cohortChildPath + "/members";
                 logger.debug("Creating members root {}", membersChildPath);
                 final Stat membersChildStat = new Stat();
-                membersChildPath = serverProxy.create(membersChildPath, null,
-                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, membersChildStat);
+                membersChildPath = serverProxy.create(membersChildPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                        CreateMode.PERSISTENT, membersChildStat);
                 logger.debug("members root:{}, stat:{}", membersChildPath, membersChildStat);
                 logger.info("Created members root:{}, zxid:{}", membersChildPath, membersChildStat.getCzxid());
 
-                cohort = Cohort.newBuilder()
-                        .setType(cohortType)
-                        .setId(cohortId)
-                        .setPath(cohortChildPath).build();
+                cohort = Cohort.newBuilder().setType(cohortType).setId(cohortId).setPath(cohortChildPath).build();
 
                 // for debugging
                 // if (serverProxy.exists(membersChildPath, false) == null) {
@@ -439,16 +441,20 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                 logger.info("Member added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                                 break;
                             case NodeDeleted:
-                                logger.info("Member left or died, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                logger.info("Member left or died, sessionId:{}, {}", getServerSessionId(),
+                                        watchedEvent.getPath());
                                 break;
                             case NodeDataChanged:
-                                logger.info("Member data changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                logger.info("Member data changed, sessionId:{}, {}", getServerSessionId(),
+                                        watchedEvent.getPath());
                                 break;
                             case NodeChildrenChanged:
-                                logger.info("Membership changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                logger.info("Membership changed, sessionId:{}, {}", getServerSessionId(),
+                                        watchedEvent.getPath());
                                 break;
                             default:
-                                logger.info("Membership change triggered, sessionId:{}, {}", getServerSessionId(), watchedEvent);
+                                logger.info("Membership change triggered, sessionId:{}, {}", getServerSessionId(),
+                                        watchedEvent);
                                 break;
                         }
                     }
@@ -480,7 +486,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
         final List<Node> nodes = new ArrayList<>();
         try {
@@ -521,7 +528,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
         Node node = null;
         try {
@@ -534,14 +542,11 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 logger.debug("Creating node {}", nodeChildPath);
                 final Stat nodeStat = new Stat();
                 // TODO: save data in znode
-                nodeChildPath = serverProxy.create(nodeChildPath, null,
-                        ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL, nodeStat);
+                nodeChildPath = serverProxy.create(nodeChildPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                        CreateMode.EPHEMERAL, nodeStat);
                 logger.debug("node:{}, stat:{}", nodeChildPath, nodeStat);
 
-                node = Node.newBuilder()
-                        .setAddress(address)
-                        .setId(nodeId)
-                        .setPath(nodeChildPath).build();
+                node = Node.newBuilder().setAddress(address).setId(nodeId).setPath(nodeChildPath).build();
                 logger.info("Created node {}, zxid:{}", node, nodeStat.getCzxid());
 
                 final Watcher nodeChangedWatcher = new Watcher() {
@@ -551,19 +556,24 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         if (watchedEvent.getType() != EventType.None) {
                             switch (watchedEvent.getType()) {
                                 case NodeCreated:
-                                    logger.info("Node added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    logger.info("Node added, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
                                     break;
                                 case NodeDeleted:
-                                    logger.info("Node left or died, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    logger.info("Node left or died, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
                                     break;
                                 case NodeDataChanged:
-                                    logger.info("Node data changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    logger.info("Node data changed, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
                                     break;
                                 case NodeChildrenChanged:
-                                    logger.info("Node changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    logger.info("Node changed, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
                                     break;
                                 default:
-                                    logger.info("Node change triggered, sessionId:{}, {}", getServerSessionId(), watchedEvent);
+                                    logger.info("Node change triggered, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent);
                                     break;
                             }
                         }
@@ -596,7 +606,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
         final List<Cohort> cohorts = new ArrayList<>();
         try {
@@ -631,8 +642,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public Cohort joinCohort(final String namespace, final String memberId, final String cohortId, final CohortType cohortType, final String nodeId)
-            throws MembershipServerException {
+    public Cohort joinCohort(final String namespace, final String memberId, final String cohortId,
+            final CohortType cohortType, final String nodeId) throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -640,7 +651,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
 
         Cohort cohort = null;
@@ -662,16 +674,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             logger.debug("Creating member {}", memberChildPath);
             // TODO: save data in znode
             final Stat memberStat = new Stat();
-            memberChildPath = serverProxy.create(memberChildPath, null,
-                    ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL, memberStat);
+            memberChildPath = serverProxy.create(memberChildPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                    CreateMode.EPHEMERAL, memberStat);
             logger.debug("member:{}, stat:{}", memberChildPath, memberStat);
 
-            final Member member = Member.newBuilder()
-                    .setMemberId(memberId)
-                    .setCohortType(cohortType)
-                    .setCohortId(cohortId)
-                    .setNodeId(nodeId)
-                    .setPath(memberChildPath).build();
+            final Member member = Member.newBuilder().setMemberId(memberId).setCohortType(cohortType)
+                    .setCohortId(cohortId).setNodeId(nodeId).setPath(memberChildPath).build();
             logger.info("Created member {}, zxid:{}", member, memberStat.getCzxid());
 
             final Watcher membershipChangedWatcher = new Watcher() {
@@ -683,16 +691,20 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                             logger.info("Member added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                             break;
                         case NodeDeleted:
-                            logger.info("Member left or died, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                            logger.info("Member left or died, sessionId:{}, {}", getServerSessionId(),
+                                    watchedEvent.getPath());
                             break;
                         case NodeDataChanged:
-                            logger.info("Member data changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                            logger.info("Member data changed, sessionId:{}, {}", getServerSessionId(),
+                                    watchedEvent.getPath());
                             break;
                         case NodeChildrenChanged:
-                            logger.info("Membership changed, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                            logger.info("Membership changed, sessionId:{}, {}", getServerSessionId(),
+                                    watchedEvent.getPath());
                             break;
                         default:
-                            logger.info("Membership change triggered, sessionId:{}, {}", getServerSessionId(), watchedEvent);
+                            logger.info("Membership change triggered, sessionId:{}, {}", getServerSessionId(),
+                                    watchedEvent);
                             break;
                     }
                 }
@@ -716,7 +728,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public Cohort describeCohort(final String namespace, final String cohortId, final CohortType cohortType) throws MembershipServerException {
+    public Cohort describeCohort(final String namespace, final String cohortId, final CohortType cohortType)
+            throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -724,7 +737,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
 
         Cohort cohort = null;
@@ -742,19 +756,13 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             final List<String> memberIds = serverProxy.getChildren(cohortMembersPath, false);
             final List<Member> members = new ArrayList<>();
             for (final String memberId : memberIds) {
-                final Member member = Member.newBuilder()
-                        .setCohortId(cohortId)
-                        .setCohortType(cohortType)
-                        .setMemberId(memberId)
-                        .setPath(cohortMembersPath + "/" + memberId).build();
+                final Member member = Member.newBuilder().setCohortId(cohortId).setCohortType(cohortType)
+                        .setMemberId(memberId).setPath(cohortMembersPath + "/" + memberId).build();
                 // member.setNodeId(null); // TODO
                 members.add(member);
             }
 
-            cohort = Cohort.newBuilder()
-                    .setType(cohortType)
-                    .addAllMembers(members)
-                    .setId(cohortId)
+            cohort = Cohort.newBuilder().setType(cohortType).addAllMembers(members).setId(cohortId)
                     .setPath(cohortRootPath + "/" + cohortType + "/" + cohortId).build();
         } catch (final KeeperException keeperException) {
             if (keeperException instanceof KeeperException.NodeExistsException) {
@@ -771,8 +779,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public boolean leaveCohort(final String namespace, final String cohortId, final CohortType cohortType, final String memberId)
-            throws MembershipServerException {
+    public boolean leaveCohort(final String namespace, final String cohortId, final CohortType cohortType,
+            final String memberId) throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -780,7 +788,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
         boolean success = false;
         try {
@@ -813,7 +822,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public boolean deleteCohort(final String namespace, final String cohortId, final CohortType cohortType) throws MembershipServerException {
+    public boolean deleteCohort(final String namespace, final String cohortId, final CohortType cohortType)
+            throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -821,7 +831,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
         boolean success = false;
         try {
@@ -863,7 +874,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public boolean deleteCohortType(final String namespace, final CohortType cohortType) throws MembershipServerException {
+    public boolean deleteCohortType(final String namespace, final CohortType cohortType)
+            throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -871,7 +883,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
         boolean success = false;
         try {
@@ -920,7 +933,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         // TODO
         // if (!request.validate()) {
-        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE, request.toString());
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
         // }
         boolean success = false;
         try {

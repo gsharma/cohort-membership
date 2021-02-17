@@ -18,7 +18,6 @@ import com.github.membership.rpc.ListCohortsRequest;
 import com.github.membership.rpc.ListCohortsResponse;
 import com.github.membership.rpc.ListNodesRequest;
 import com.github.membership.rpc.ListNodesResponse;
-import com.github.membership.rpc.Member;
 import com.github.membership.rpc.NewCohortRequest;
 import com.github.membership.rpc.NewCohortResponse;
 import com.github.membership.rpc.NewCohortTypeRequest;
@@ -56,12 +55,12 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void newNamespace(final NewNamespaceRequest request, final StreamObserver<NewNamespaceResponse> responseObserver) {
+    public void newNamespace(final NewNamespaceRequest request,
+            final StreamObserver<NewNamespaceResponse> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final boolean success = membershipDelegate.newNamespace(namespace);
-            final NewNamespaceResponse response = NewNamespaceResponse.newBuilder()
-                    .setSuccess(success).build();
+            final NewNamespaceResponse response = NewNamespaceResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -71,13 +70,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void newCohortType(final NewCohortTypeRequest request, final StreamObserver<NewCohortTypeResponse> responseObserver) {
+    public void newCohortType(final NewCohortTypeRequest request,
+            final StreamObserver<NewCohortTypeResponse> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final CohortType cohortType = request.getCohortType();
             final boolean success = membershipDelegate.newCohortType(namespace, cohortType);
-            final NewCohortTypeResponse response = NewCohortTypeResponse.newBuilder()
-                    .setSuccess(success).build();
+            final NewCohortTypeResponse response = NewCohortTypeResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -93,8 +92,7 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             final String cohortId = request.getCohortId();
             final CohortType cohortType = request.getCohortType();
             final Cohort cohort = membershipDelegate.newCohort(namespace, cohortId, cohortType);
-            final NewCohortResponse response = NewCohortResponse.newBuilder()
-                    .setCohort(cohort).build();
+            final NewCohortResponse response = NewCohortResponse.newBuilder().setCohort(cohort).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -111,8 +109,7 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             final String address = request.getAddress();
             final NodePersona persona = request.getPersona();
             final Node node = membershipDelegate.newNode(namespace, nodeId, persona, address);
-            final NewNodeResponse response = NewNodeResponse.newBuilder()
-                    .setNode(node).build();
+            final NewNodeResponse response = NewNodeResponse.newBuilder().setNode(node).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -126,8 +123,7 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
         try {
             final String namespace = request.getNamespace();
             final List<Node> nodes = membershipDelegate.listNodes(namespace);
-            final ListNodesResponse response = ListNodesResponse.newBuilder()
-                    .addAllNodes(nodes).build();
+            final ListNodesResponse response = ListNodesResponse.newBuilder().addAllNodes(nodes).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -137,12 +133,12 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void listCohorts(final ListCohortsRequest request, final StreamObserver<ListCohortsResponse> responseObserver) {
+    public void listCohorts(final ListCohortsRequest request,
+            final StreamObserver<ListCohortsResponse> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final List<Cohort> cohorts = membershipDelegate.listCohorts(namespace);
-            final ListCohortsResponse response = ListCohortsResponse.newBuilder()
-                    .addAllCohorts(cohorts).build();
+            final ListCohortsResponse response = ListCohortsResponse.newBuilder().addAllCohorts(cohorts).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -160,8 +156,7 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             final String memberId = request.getMemberId();
             final String nodeId = request.getNodeId();
             final Cohort cohort = membershipDelegate.joinCohort(namespace, memberId, cohortId, cohortType, nodeId);
-            final JoinCohortResponse response = JoinCohortResponse.newBuilder()
-                    .setCohort(cohort).build();
+            final JoinCohortResponse response = JoinCohortResponse.newBuilder().setCohort(cohort).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -171,7 +166,8 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void describeCohort(final DescribeCohortRequest request, final StreamObserver<DescribeCohortResponse> responseObserver) {
+    public void describeCohort(final DescribeCohortRequest request,
+            final StreamObserver<DescribeCohortResponse> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
@@ -187,15 +183,15 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void leaveCohort(final LeaveCohortRequest request, final StreamObserver<LeaveCohortResponse> responseObserver) {
+    public void leaveCohort(final LeaveCohortRequest request,
+            final StreamObserver<LeaveCohortResponse> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
             final CohortType cohortType = request.getCohortType();
             final String memberId = request.getMemberId();
             final boolean success = membershipDelegate.leaveCohort(namespace, cohortId, cohortType, memberId);
-            final LeaveCohortResponse response = LeaveCohortResponse.newBuilder()
-                    .setSuccess(success).build();
+            final LeaveCohortResponse response = LeaveCohortResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -205,14 +201,14 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void deleteCohort(final DeleteCohortRequest request, final StreamObserver<DeleteCohortResponse> responseObserver) {
+    public void deleteCohort(final DeleteCohortRequest request,
+            final StreamObserver<DeleteCohortResponse> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
             final CohortType cohortType = request.getCohortType();
             final boolean success = membershipDelegate.deleteCohort(namespace, cohortId, cohortType);
-            final DeleteCohortResponse response = DeleteCohortResponse.newBuilder()
-                    .setSuccess(success).build();
+            final DeleteCohortResponse response = DeleteCohortResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -222,13 +218,13 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void deleteCohortType(final DeleteCohortTypeRequest request, final StreamObserver<DeleteCohortTypeResponse> responseObserver) {
+    public void deleteCohortType(final DeleteCohortTypeRequest request,
+            final StreamObserver<DeleteCohortTypeResponse> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final CohortType cohortType = request.getCohortType();
             final boolean success = membershipDelegate.deleteCohortType(namespace, cohortType);
-            final DeleteCohortTypeResponse response = DeleteCohortTypeResponse.newBuilder()
-                    .setSuccess(success).build();
+            final DeleteCohortTypeResponse response = DeleteCohortTypeResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -243,8 +239,7 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             final String namespace = request.getNamespace();
             final String nodeId = request.getNodeId();
             final boolean success = membershipDelegate.deleteNode(namespace, nodeId);
-            final DeleteNodeResponse response = DeleteNodeResponse.newBuilder()
-                    .setSuccess(success).build();
+            final DeleteNodeResponse response = DeleteNodeResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -254,12 +249,12 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void purgeNamespace(final PurgeNamespaceRequest request, final StreamObserver<PurgeNamespaceResponse> responseObserver) {
+    public void purgeNamespace(final PurgeNamespaceRequest request,
+            final StreamObserver<PurgeNamespaceResponse> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final boolean success = membershipDelegate.purgeNamespace(namespace);
-            final PurgeNamespaceResponse response = PurgeNamespaceResponse.newBuilder()
-                    .setSuccess(success).build();
+            final PurgeNamespaceResponse response = PurgeNamespaceResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -269,6 +264,7 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     private static StatusRuntimeException toStatusRuntimeException(final MembershipServerException serverException) {
-        return new StatusRuntimeException(Status.fromCode(Code.INTERNAL).withCause(serverException).withDescription(serverException.getMessage()));
+        return new StatusRuntimeException(Status.fromCode(Code.INTERNAL).withCause(serverException)
+                .withDescription(serverException.getMessage()));
     }
 }
