@@ -1638,6 +1638,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
     }
 
+    @SuppressWarnings("unused")
     private static boolean checkIdempotency(final KeeperException keeperException) {
         boolean idempotent = false;
         switch (keeperException.code()) {
@@ -1646,6 +1647,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             case SESSIONMOVED:
             case OPERATIONTIMEOUT:
                 idempotent = true;
+            default:
+                break;
         }
         return idempotent;
     }
