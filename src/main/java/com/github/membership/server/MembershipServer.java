@@ -14,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.github.membership.lib.Lifecycle;
+import com.github.membership.server.MembershipDelegate.DelegateMode;
 
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
@@ -26,6 +27,9 @@ public final class MembershipServer implements Lifecycle {
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean ready = new AtomicBoolean(false);
+
+    private final DelegateMode delegateMode = DelegateMode.CURATOR;
+    // private final DelegateMode delegateMode = DelegateMode.ZK_DIRECT;
 
     private MembershipServerConfiguration serverConfig;
     private MembershipServiceImpl service;
@@ -50,7 +54,7 @@ public final class MembershipServer implements Lifecycle {
                 if (connectString != null && !connectString.trim().isEmpty()) {
                     this.serverConfig.setConnectString(connectString);
                 }
-                this.delegate = MembershipDelegate.getDelegate(serverConfig);
+                this.delegate = MembershipDelegate.getDelegate(serverConfig, delegateMode);
                 delegate.start();
                 service.setDelegate(delegate);
                 logger.info("Reloaded MembershipServer [{}] configuration", getIdentity());
@@ -79,7 +83,7 @@ public final class MembershipServer implements Lifecycle {
                     logger.info("Starting MembershipServer [{}] at port {}", getIdentity(),
                             serverConfig.getServerPort());
                     try {
-                        delegate = MembershipDelegate.getDelegate(serverConfig);
+                        delegate = MembershipDelegate.getDelegate(serverConfig, delegateMode);
                         delegate.start();
 
                         serverExecutor = (ThreadPoolExecutor) Executors

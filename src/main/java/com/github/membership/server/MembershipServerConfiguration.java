@@ -1,13 +1,42 @@
 package com.github.membership.server;
 
+// TODO: modularize configurations
 public final class MembershipServerConfiguration {
     private String serverHost;
     private int serverPort;
     private int workerCount;
 
     private String connectString;
+    private int clientConnectionTimeoutMillis;
     private int clientSessionTimeoutMillis;
     private long clientSessionEstablishmentTimeoutSeconds;
+
+    private String serverUser;
+    private String serverPassword;
+
+    public String getServerUser() {
+        return serverUser;
+    }
+
+    public void setServerUser(String serverUser) {
+        this.serverUser = serverUser;
+    }
+
+    public String getServerPassword() {
+        return serverPassword;
+    }
+
+    public void setServerPassword(String serverPassword) {
+        this.serverPassword = serverPassword;
+    }
+
+    public int getClientConnectionTimeoutMillis() {
+        return clientConnectionTimeoutMillis;
+    }
+
+    public void setClientConnectionTimeoutMillis(int clientConnectionTimeoutMillis) {
+        this.clientConnectionTimeoutMillis = clientConnectionTimeoutMillis;
+    }
 
     public String getConnectString() {
         return connectString;
@@ -59,10 +88,10 @@ public final class MembershipServerConfiguration {
 
     @Override
     public String toString() {
-        return "MembershipServerConfiguration [connectString=" + connectString + ", serverHost=" + serverHost
-                + ", serverPort=" + serverPort + ", workerCount=" + workerCount + ", clientSessionTimeoutMillis="
-                + clientSessionTimeoutMillis + ", clientSessionEstablishmentTimeoutSeconds="
-                + clientSessionEstablishmentTimeoutSeconds + "]";
+        return "MembershipServerConfiguration [serverHost=" + serverHost + ", serverPort=" + serverPort + ", workerCount=" + workerCount
+                + ", connectString=" + connectString + ", clientConnectionTimeoutMillis=" + clientConnectionTimeoutMillis + ", serverUser="
+                + serverUser + ", serverPassword=" + serverPassword + ", clientSessionTimeoutMillis=" + clientSessionTimeoutMillis
+                + ", clientSessionEstablishmentTimeoutSeconds=" + clientSessionEstablishmentTimeoutSeconds + "]";
     }
 
 }

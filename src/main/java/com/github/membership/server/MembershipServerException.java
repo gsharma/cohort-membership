@@ -23,6 +23,11 @@ final class MembershipServerException extends Exception {
         this.code = code;
     }
 
+    MembershipServerException(final Code code, final String message, final Throwable throwable) {
+        super(message, throwable);
+        this.code = code;
+    }
+
     Code getCode() {
         return code;
     }

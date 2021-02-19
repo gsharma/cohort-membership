@@ -6,9 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -21,7 +19,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.github.membership.client.MembershipClient;
@@ -56,7 +53,6 @@ import com.github.membership.rpc.Node;
 import com.github.membership.rpc.NodePersona;
 import com.github.membership.rpc.PurgeNamespaceRequest;
 import com.github.membership.rpc.PurgeNamespaceResponse;
-import com.github.membership.server.MembershipDelegate;
 import com.github.membership.server.MembershipServer;
 import com.github.membership.server.MembershipServerConfiguration;
 
@@ -85,7 +81,7 @@ public final class CohortMembershipTest {
             membershipService.start();
             assertTrue(membershipService.isRunning());
 
-            client = MembershipClient.getClient("localhost", 5001, 1L, 1);
+            client = MembershipClient.getClient("localhost", 5001, 3L, 1);
             client.start();
             assertTrue(client.isRunning());
 
@@ -325,7 +321,7 @@ public final class CohortMembershipTest {
             membershipServiceOne.start();
             assertTrue(membershipServiceOne.isRunning());
 
-            clientOne = MembershipClient.getClient("localhost", 4001, 1L, 1);
+            clientOne = MembershipClient.getClient("localhost", 4001, 3L, 1);
             clientOne.start();
             assertTrue(clientOne.isRunning());
 
@@ -340,7 +336,7 @@ public final class CohortMembershipTest {
             membershipServiceTwo.start();
             assertTrue(membershipServiceTwo.isRunning());
 
-            clientTwo = MembershipClient.getClient("localhost", 4002, 1L, 1);
+            clientTwo = MembershipClient.getClient("localhost", 4002, 3L, 1);
             clientTwo.start();
             assertTrue(clientTwo.isRunning());
 
@@ -521,7 +517,7 @@ public final class CohortMembershipTest {
             membershipServiceOne.start();
             assertTrue(membershipServiceOne.isRunning());
 
-            clientOne = MembershipClient.getClient("localhost", 4001, 2L, 1);
+            clientOne = MembershipClient.getClient("localhost", 4001, 3L, 1);
             clientOne.start();
             assertTrue(clientOne.isRunning());
 
@@ -658,7 +654,7 @@ public final class CohortMembershipTest {
             membershipServer.start();
             assertTrue(membershipServer.isRunning());
 
-            membershipClient = MembershipClient.getClient("localhost", 6001, 2L, 1);
+            membershipClient = MembershipClient.getClient("localhost", 6001, 3L, 1);
             membershipClient.start();
             assertTrue(membershipClient.isRunning());
 

@@ -49,8 +49,12 @@ public interface MembershipDelegate extends Lifecycle {
     // ReleaseLockResponse releaseLock(final ReleaseLockRequest request) throws
     // MembershipServerException;
 
-    static MembershipDelegate getDelegate(final MembershipServerConfiguration configuration) {
-        return new ZkMembershipDelegate(configuration);
+    enum DelegateMode {
+        ZK_DIRECT, CURATOR;
+    }
+
+    static MembershipDelegate getDelegate(final MembershipServerConfiguration configuration, final DelegateMode mode) {
+        return new ZkMembershipDelegate(configuration, mode);
     }
 
 }
