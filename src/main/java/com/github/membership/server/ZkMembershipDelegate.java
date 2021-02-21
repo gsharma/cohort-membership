@@ -99,6 +99,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
             final String serverUser = configuration.getServerUser();
             final String serverPassword = configuration.getServerPassword();
+            final boolean isAuth = serverUser != null && !serverUser.trim().isEmpty()
+                    && serverPassword != null && !serverPassword.trim().isEmpty();
 
             switch (mode) {
                 case ZK_DIRECT: {
@@ -155,10 +157,16 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     };
                     try {
                         serverProxyZk = new ZooKeeper(connectString, sessionTimeoutMillis, watcher);
+
                         logger.debug("Server proxy connection state:{}", serverProxyZk.getState());
                         // serverSessionId = serverProxy.getSessionId();
                         if (transitionedToConnected.await(sessionEstablishmentTimeoutSeconds, TimeUnit.SECONDS)) {
                             ready.set(true);
+                            if (isAuth) {
+                                final byte[] auth = (serverUser + ":" + serverPassword).getBytes();
+                                final String scheme = "digest";
+                                serverProxyZk.addAuthInfo(scheme, auth);
+                            }
                             logger.info(
                                     "Started ZkCohortMembership [{}], state:{}, mode:{}, sessionId:{}, connectedTo:[{}] in {} millis",
                                     getIdentity(), serverProxyZk.getState(), mode, getServerSessionId(), connectString,
@@ -184,7 +192,6 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         final CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder().connectString(connectString)
                                 .connectionTimeoutMs(connectTimeoutMillis).sessionTimeoutMs(sessionTimeoutMillis)
                                 .retryPolicy(retryPolicy);
-                        final boolean isAuth = serverUser != null && serverPassword != null;
                         if (isAuth) {
                             final String authString = serverUser + ":" + serverPassword;
                             final Id authId = new Id("auth", authString);
