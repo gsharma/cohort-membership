@@ -9,6 +9,8 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -20,6 +22,8 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.recipes.locks.InterProcessLock;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.framework.recipes.watch.PersistentWatcher;
 import org.apache.curator.retry.BoundedExponentialBackoffRetry;
 import org.apache.logging.log4j.LogManager;
@@ -62,7 +66,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     private ZooKeeper serverProxyZk;
     private volatile long serverSessionId;
 
-    private Set<String> trackedNamespaces;
+    private final Set<String> trackedNamespaces;
+    private final ConcurrentMap<String, InterProcessLock> trackedLocks;
 
     ZkMembershipDelegate(final MembershipServerConfiguration configuration, final DelegateMode mode) {
         this.running = new AtomicBoolean(false);
@@ -74,6 +79,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         this.mode = mode;
 
         this.trackedNamespaces = new CopyOnWriteArraySet<>();
+        this.trackedLocks = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -1647,6 +1653,61 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             }
         }
         return success;
+    }
+
+    @Override
+    public boolean acquireLock(final String namespace, final String entity, final long waitSeconds) throws MembershipServerException {
+        boolean acquired = false;
+        final String lockPath = "/" + namespace + "/" + entity;
+        switch (mode) {
+            case ZK_DIRECT: {
+                // not implemented
+                break;
+            }
+            case CURATOR: {
+                try {
+                    final InterProcessLock lock = new InterProcessSemaphoreMutex(serverProxyCurator, lockPath);
+                    acquired = lock.acquire(waitSeconds, TimeUnit.SECONDS);
+                    if (acquired) {
+                        trackedLocks.put(lockPath, lock);
+                    }
+                } catch (final Exception curatorException) {
+                    logger.error(Code.LOCK_ACQUISITION_FAILURE.name(), curatorException);
+                    throw new MembershipServerException(Code.LOCK_ACQUISITION_FAILURE, curatorException);
+                }
+                break;
+            }
+        }
+        logger.info("Acquire lock, entity:{}, acquired:{}", lockPath, acquired);
+        return acquired;
+    }
+
+    @Override
+    public boolean releaseLock(final String namespace, final String entity) throws MembershipServerException {
+        boolean released = false;
+        final String lockPath = "/" + namespace + "/" + entity;
+        switch (mode) {
+            case ZK_DIRECT: {
+                // not implemented
+                break;
+            }
+            case CURATOR: {
+                try {
+                    final InterProcessLock lock = trackedLocks.get(lockPath);
+                    if (lock != null) {
+                        lock.release();
+                        trackedLocks.remove(lockPath);
+                        released = true;
+                    }
+                } catch (final Exception curatorException) {
+                    logger.error(Code.LOCK_RELEASE_FAILURE.name(), curatorException);
+                    throw new MembershipServerException(Code.LOCK_RELEASE_FAILURE, curatorException);
+                }
+                break;
+            }
+        }
+        logger.info("Release lock, entity:{}, released:{}", lockPath, released);
+        return released;
     }
 
     // Responsible for replenishing watches that have been triggered and cleared

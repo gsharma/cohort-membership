@@ -22,6 +22,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.github.membership.client.MembershipClient;
+import com.github.membership.rpc.AcquireLockRequest;
+import com.github.membership.rpc.AcquireLockResponse;
 import com.github.membership.rpc.Cohort;
 import com.github.membership.rpc.CohortType;
 import com.github.membership.rpc.DeleteCohortRequest;
@@ -53,6 +55,8 @@ import com.github.membership.rpc.Node;
 import com.github.membership.rpc.NodePersona;
 import com.github.membership.rpc.PurgeNamespaceRequest;
 import com.github.membership.rpc.PurgeNamespaceResponse;
+import com.github.membership.rpc.ReleaseLockRequest;
+import com.github.membership.rpc.ReleaseLockResponse;
 import com.github.membership.server.MembershipServer;
 import com.github.membership.server.MembershipServerConfiguration;
 
@@ -64,6 +68,69 @@ public final class CohortMembershipTest {
 
     private TestingCluster zkCluster;
     private TestingServer zkServer;
+
+    @Test
+    public void testLocking() throws Exception {
+        MembershipServer membershipService = null;
+        MembershipClient client = null;
+        try {
+            final MembershipServerConfiguration serviceConfig = new MembershipServerConfiguration();
+            serviceConfig.setConnectString(zkCluster.getConnectString());
+            serviceConfig.setServerHost("localhost");
+            serviceConfig.setServerPort(3001);
+            serviceConfig.setWorkerCount(2);
+            serviceConfig.setClientSessionTimeoutMillis(60 * 1000);
+            serviceConfig.setClientSessionEstablishmentTimeoutSeconds(3L);
+            membershipService = new MembershipServer(serviceConfig);
+            membershipService.start();
+            assertTrue(membershipService.isRunning());
+
+            client = MembershipClient.getClient("localhost", 3001, 3L, 1);
+            client.start();
+            assertTrue(client.isRunning());
+
+            logger.info("[step-1] acquire lock");
+            final String namespace = "testLocking";
+            final String lockEntity = UUID.randomUUID().toString();
+            final AcquireLockRequest acquireLockRequestOne = AcquireLockRequest.newBuilder()
+                    .setNamespace(namespace).setLockEntity(lockEntity).setWaitSeconds(1L).build();
+            final AcquireLockResponse acquireLockResponseOne = client.acquireLock(acquireLockRequestOne);
+            assertTrue(acquireLockResponseOne.getSuccess());
+
+            logger.info("[step-2] reacquire already-held lock, should fail");
+            final AcquireLockRequest acquireLockRequestTwo = AcquireLockRequest.newBuilder()
+                    .setNamespace(namespace).setLockEntity(lockEntity).setWaitSeconds(1L).build();
+            final AcquireLockResponse acquireLockResponseTwo = client.acquireLock(acquireLockRequestTwo);
+            assertFalse(acquireLockResponseTwo.getSuccess());
+
+            logger.info("[step-3] release lock");
+            final ReleaseLockRequest releaseLockRequestOne = ReleaseLockRequest.newBuilder()
+                    .setNamespace(namespace).setLockEntity(lockEntity).build();
+            final ReleaseLockResponse releaseLockResponseOne = client.releaseLock(releaseLockRequestOne);
+            assertTrue(releaseLockResponseOne.getSuccess());
+
+            logger.info("[step-4] reacquire same lock");
+            final AcquireLockRequest acquireLockRequestThree = AcquireLockRequest.newBuilder()
+                    .setNamespace(namespace).setLockEntity(lockEntity).setWaitSeconds(1L).build();
+            final AcquireLockResponse acquireLockResponseThree = client.acquireLock(acquireLockRequestThree);
+            assertTrue(acquireLockResponseThree.getSuccess());
+
+            logger.info("[step-5] release lock");
+            final ReleaseLockRequest releaseLockRequestTwo = ReleaseLockRequest.newBuilder()
+                    .setNamespace(namespace).setLockEntity(lockEntity).build();
+            final ReleaseLockResponse releaseLockResponseTwo = client.releaseLock(releaseLockRequestTwo);
+            assertTrue(releaseLockResponseTwo.getSuccess());
+        } finally {
+            if (client != null && client.isRunning()) {
+                client.stop();
+                assertFalse(client.isRunning());
+            }
+            if (membershipService != null && membershipService.isRunning()) {
+                membershipService.stop();
+                assertFalse(membershipService.isRunning());
+            }
+        }
+    }
 
     @Test
     public void testBasicJoin() throws Exception {

@@ -1,5 +1,7 @@
 package com.github.membership.server;
 
+import com.github.membership.rpc.AcquireLockRequest;
+import com.github.membership.rpc.AcquireLockResponse;
 import com.github.membership.rpc.Cohort;
 import com.github.membership.rpc.CohortType;
 import com.github.membership.rpc.DeleteCohortRequest;
@@ -30,6 +32,8 @@ import com.github.membership.rpc.Node;
 import com.github.membership.rpc.NodePersona;
 import com.github.membership.rpc.PurgeNamespaceRequest;
 import com.github.membership.rpc.PurgeNamespaceResponse;
+import com.github.membership.rpc.ReleaseLockRequest;
+import com.github.membership.rpc.ReleaseLockResponse;
 import com.github.membership.rpc.MembershipServiceGrpc.MembershipServiceImplBase;
 
 import java.util.List;
@@ -255,6 +259,40 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             final String namespace = request.getNamespace();
             final boolean success = membershipDelegate.purgeNamespace(namespace);
             final PurgeNamespaceResponse response = PurgeNamespaceResponse.newBuilder().setSuccess(success).build();
+            logger.debug(response);
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
+        }
+    }
+
+    @Override
+    public void acquireLock(final AcquireLockRequest request,
+            final StreamObserver<AcquireLockResponse> responseObserver) {
+        try {
+            final String namespace = request.getNamespace();
+            final String lockEntity = request.getLockEntity();
+            final long waitSeconds = request.getWaitSeconds();
+            // logger.debug("Acquire lock, namespace:{}, entity:{}, waitSeconds:{}", namespace, lockEntity, waitSeconds);
+            final boolean success = membershipDelegate.acquireLock(namespace, lockEntity, waitSeconds);
+            final AcquireLockResponse response = AcquireLockResponse.newBuilder().setSuccess(success).build();
+            logger.debug(response);
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
+        }
+    }
+
+    @Override
+    public void releaseLock(final ReleaseLockRequest request,
+            final StreamObserver<ReleaseLockResponse> responseObserver) {
+        try {
+            final String namespace = request.getNamespace();
+            final String lockEntity = request.getLockEntity();
+            final boolean success = membershipDelegate.releaseLock(namespace, lockEntity);
+            final ReleaseLockResponse response = ReleaseLockResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();

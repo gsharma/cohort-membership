@@ -1,6 +1,8 @@
 package com.github.membership.client;
 
 import com.github.membership.lib.Lifecycle;
+import com.github.membership.rpc.AcquireLockRequest;
+import com.github.membership.rpc.AcquireLockResponse;
 import com.github.membership.rpc.DeleteCohortRequest;
 import com.github.membership.rpc.DeleteCohortResponse;
 import com.github.membership.rpc.DeleteCohortTypeRequest;
@@ -27,6 +29,8 @@ import com.github.membership.rpc.NewNodeRequest;
 import com.github.membership.rpc.NewNodeResponse;
 import com.github.membership.rpc.PurgeNamespaceRequest;
 import com.github.membership.rpc.PurgeNamespaceResponse;
+import com.github.membership.rpc.ReleaseLockRequest;
+import com.github.membership.rpc.ReleaseLockResponse;
 
 /**
  * Client interface for the membership service.
@@ -58,6 +62,10 @@ public interface MembershipClient extends Lifecycle {
     DeleteNodeResponse deleteNode(final DeleteNodeRequest request) throws MembershipClientException;
 
     PurgeNamespaceResponse purgeNamespace(final PurgeNamespaceRequest request) throws MembershipClientException;
+
+    AcquireLockResponse acquireLock(final AcquireLockRequest request) throws MembershipClientException;
+
+    ReleaseLockResponse releaseLock(final ReleaseLockRequest request) throws MembershipClientException;
 
     static MembershipClient getClient(final String serverHost, final int serverPort, final long serverDeadlineSeconds,
             final int workerCount) {

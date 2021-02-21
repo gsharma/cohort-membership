@@ -43,11 +43,9 @@ public interface MembershipDelegate extends Lifecycle {
 
     boolean purgeNamespace(final String namespace) throws MembershipServerException;
 
-    // AcquireLockResponse acquireLock(final AcquireLockRequest request) throws
-    // MembershipServerException;
+    boolean acquireLock(final String namespace, final String entity, final long waitSeconds) throws MembershipServerException;
 
-    // ReleaseLockResponse releaseLock(final ReleaseLockRequest request) throws
-    // MembershipServerException;
+    boolean releaseLock(final String namespace, final String entity) throws MembershipServerException;
 
     enum DelegateMode {
         ZK_DIRECT, CURATOR;

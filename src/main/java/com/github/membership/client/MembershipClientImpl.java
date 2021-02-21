@@ -13,6 +13,8 @@ import org.apache.logging.log4j.Logger;
 
 import com.github.membership.client.MembershipClientException.Code;
 
+import com.github.membership.rpc.AcquireLockRequest;
+import com.github.membership.rpc.AcquireLockResponse;
 import com.github.membership.rpc.DeleteCohortRequest;
 import com.github.membership.rpc.DeleteCohortResponse;
 import com.github.membership.rpc.DeleteCohortTypeRequest;
@@ -40,6 +42,8 @@ import com.github.membership.rpc.NewNodeRequest;
 import com.github.membership.rpc.NewNodeResponse;
 import com.github.membership.rpc.PurgeNamespaceRequest;
 import com.github.membership.rpc.PurgeNamespaceResponse;
+import com.github.membership.rpc.ReleaseLockRequest;
+import com.github.membership.rpc.ReleaseLockResponse;
 
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -318,6 +322,36 @@ public final class MembershipClientImpl implements MembershipClient {
         PurgeNamespaceResponse response = null;
         try {
             response = serviceStub.purgeNamespace(request);
+        } catch (Throwable problem) {
+            toMembershipClientException(problem);
+        }
+        return response;
+    }
+
+    @Override
+    public AcquireLockResponse acquireLock(AcquireLockRequest request) throws MembershipClientException {
+        if (!isRunning()) {
+            throw new MembershipClientException(Code.INVALID_MEMBERSHIP_CLIENT_LCM,
+                    "Invalid attempt to operate an already stopped membership client");
+        }
+        AcquireLockResponse response = null;
+        try {
+            response = serviceStub.acquireLock(request);
+        } catch (Throwable problem) {
+            toMembershipClientException(problem);
+        }
+        return response;
+    }
+
+    @Override
+    public ReleaseLockResponse releaseLock(ReleaseLockRequest request) throws MembershipClientException {
+        if (!isRunning()) {
+            throw new MembershipClientException(Code.INVALID_MEMBERSHIP_CLIENT_LCM,
+                    "Invalid attempt to operate an already stopped membership client");
+        }
+        ReleaseLockResponse response = null;
+        try {
+            response = serviceStub.releaseLock(request);
         } catch (Throwable problem) {
             toMembershipClientException(problem);
         }

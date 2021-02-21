@@ -43,6 +43,10 @@ final class MembershipServerException extends Exception {
         REQUEST_VALIDATION_FAILURE("Membership service received an invalid request"),
         // 5.
         PARENT_LOCATOR_FAILURE("Membership service failed to locate parent entity"),
+        // 6.
+        LOCK_ACQUISITION_FAILURE("Membership service failed to acquire lock on entity"),
+        // 7.
+        LOCK_RELEASE_FAILURE("Membership service failed to release lock on entity"),
         // n.
         UNKNOWN_FAILURE(
                 "Membership service internal failure. Check exception stacktrace for more details of the failure");

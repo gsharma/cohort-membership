@@ -162,6 +162,25 @@ message PurgeNamespaceResponse {
   bool success = 1;
 }
 
+message AcquireLockRequest {
+  string namespace = 1;
+  string lockEntity = 2;
+  int64 waitSeconds = 3;
+}
+
+message AcquireLockResponse {
+  bool success = 1;
+}
+
+message ReleaseLockRequest {
+  string namespace = 1;
+  string lockEntity = 2;
+}
+
+message ReleaseLockResponse {
+  bool success = 1;
+}
+
 service MembershipService {
   rpc newNamespace (NewNamespaceRequest) returns (NewNamespaceResponse);
 
@@ -189,5 +208,8 @@ service MembershipService {
 
   rpc purgeNamespace (PurgeNamespaceRequest) returns (PurgeNamespaceResponse);
 
+  rpc acquireLock (AcquireLockRequest) returns (AcquireLockResponse);
+
+  rpc releaseLock (ReleaseLockRequest) returns (ReleaseLockResponse);
 }
 
