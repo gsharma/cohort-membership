@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -18,6 +20,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.recipes.watch.PersistentWatcher;
 import org.apache.curator.retry.BoundedExponentialBackoffRetry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -655,7 +658,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                 }
                             }
                         };
-                        serverProxyZk.getChildren(membersChildPath, membershipChangedWatcher);
+                        // serverProxyZk.getChildren(membersChildPath, membershipChangedWatcher);
                     } else {
                         logger.warn("Failed to locate cohort child tree {}", cohortChildPath);
                     }
@@ -739,7 +742,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                 }
                             }
                         };
-                        serverProxyCurator.getChildren().usingWatcher(membershipChangedWatcher).forPath(membersChildPath);
+                        // serverProxyCurator.getChildren().usingWatcher(membershipChangedWatcher).forPath(membersChildPath);
                     } else {
                         logger.warn("Failed to locate cohort child tree {}", cohortChildPath);
                     }
@@ -1163,7 +1166,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                             .setCohortId(cohortId).setNodeId(nodeId).setPath(memberChildPath).build();
                     logger.info("Created member {}, zxid:{}", member, memberStat.getCzxid());
 
-                    final CuratorWatcher membershipChangedWatcher = new CuratorWatcher() {
+                    final CuratorWatcher membershipChangedCuratorWatcher = new CuratorWatcher() {
                         @Override
                         public void process(final WatchedEvent watchedEvent) {
                             // logger.info("Membership changed, {}", watchedEvent);
@@ -1190,8 +1193,40 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                             }
                         }
                     };
-                    serverProxyCurator.checkExists().usingWatcher(membershipChangedWatcher).forPath(memberChildPath);
-                    // serverProxy.getChildren(cohortMembersPath, membershipChangedWatcher);
+                    // serverProxyCurator.checkExists().usingWatcher(membershipChangedWatcher).forPath(memberChildPath);
+                    // serverProxyCurator.getChildren().usingWatcher(membershipChangedCuratorWatcher).forPath(cohortMembersPath);
+
+                    final Watcher membershipChangedWatcher = new Watcher() {
+                        @Override
+                        public void process(final WatchedEvent watchedEvent) {
+                            // logger.info("Membership changed, {}", watchedEvent);
+                            switch (watchedEvent.getType()) {
+                                case NodeCreated:
+                                    logger.info("Member added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    break;
+                                case NodeDeleted:
+                                    logger.info("Member left or died, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                case NodeDataChanged:
+                                    logger.info("Member data changed, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                case NodeChildrenChanged:
+                                    logger.info("Membership changed, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                default:
+                                    logger.info("Membership change triggered, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent);
+                                    break;
+                            }
+                        }
+                    };
+
+                    final PersistentWatcher membershipEditWatcher = new PersistentWatcher(serverProxyCurator, memberChildPath, true);
+                    membershipEditWatcher.start();
+                    membershipEditWatcher.getListenable().addListener(membershipChangedWatcher);
 
                     cohort = describeCohort(namespace, cohortId, cohortType);
                 } catch (final Exception curatorException) {

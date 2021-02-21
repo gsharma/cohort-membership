@@ -79,8 +79,6 @@ final NewCohortTypeRequest newCohortTypeRequestTwo = NewCohortTypeRequest.newBui
         .setCohortType(CohortType.TWO).build();
 final NewCohortTypeResponse newCohortTypeResponseTwo = client.newCohortType(newCohortTypeRequestTwo);
 assertTrue(newCohortTypeResponseTwo.getSuccess());
-// assertEquals(CohortType.TWO, newCohortTypeResponseTwo.getCohortType());
-// assertEquals("/" + namespace + "/cohorts/" + newCohortTypeRequestTwo.getCohortType().name(), newCohortTypeResponseTwo.getPath());
 
 logger.info("[step-6] create cohortOne");
 final NewCohortRequest newCohortRequestOne = NewCohortRequest.newBuilder()
