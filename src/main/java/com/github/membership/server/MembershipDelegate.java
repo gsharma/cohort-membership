@@ -11,14 +11,14 @@ import com.github.membership.rpc.NodePersona;
 public interface MembershipDelegate extends Lifecycle {
     // reloadable
 
-    boolean newNamespace(final String namespace) throws MembershipServerException;
+    boolean newNamespace(final String namespace, final byte[] namespaceMetadata) throws MembershipServerException;
 
-    boolean newCohortType(final String namespace, final CohortType cohortType) throws MembershipServerException;
+    boolean newCohortType(final String namespace, final CohortType cohortType, final byte[] cohortTypeMetadata) throws MembershipServerException;
 
-    Cohort newCohort(final String namespace, final String cohortId, final CohortType cohortType)
+    Cohort newCohort(final String namespace, final String cohortId, final CohortType cohortType, final byte[] cohortMetadata)
             throws MembershipServerException;
 
-    Node newNode(final String namespace, final String nodeId, final NodePersona persona, final String address)
+    Node newNode(final String namespace, final String nodeId, final NodePersona persona, final byte[] nodeMetadata)
             throws MembershipServerException;
 
     List<Node> listNodes(final String namespace) throws MembershipServerException;
@@ -26,7 +26,7 @@ public interface MembershipDelegate extends Lifecycle {
     List<Cohort> listCohorts(final String namespace) throws MembershipServerException;
 
     Cohort joinCohort(final String namespace, final String memberId, final String cohortId, final CohortType cohortType,
-            final String nodeId) throws MembershipServerException;
+            final String nodeId, final byte[] memberMetadata) throws MembershipServerException;
 
     Cohort describeCohort(final String namespace, final String cohortId, final CohortType cohortType)
             throws MembershipServerException;

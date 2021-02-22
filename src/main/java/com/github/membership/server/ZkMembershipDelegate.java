@@ -8,12 +8,12 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
+// import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
+// import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -203,6 +203,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                             final Id authId = new Id("auth", authString);
                             final List<ACL> aclList = Collections.singletonList(new ACL(ZooDefs.Perms.ALL, authId));
                             builder.authorization("digest", authString.getBytes()).aclProvider(new ACLProvider() {
+
                                 @Override
                                 public List<ACL> getDefaultAcl() {
                                     return aclList;
@@ -218,19 +219,19 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         serverProxyCurator.start();
                         serverSessionId = serverProxyCurator.getZookeeperClient().getZooKeeper().getSessionId();
                         ready.set(true);
-                        logger.info(
-                                "Started ZkCohortMembership [{}], state:{}, mode:{}, sessionId:{}, connectedTo:[{}] in {} millis",
-                                getIdentity(), serverProxyCurator.getState(), mode, getServerSessionId(), connectString,
+                        logger.info("Started ZkCohortMembership [{}], state:{}, mode:{}, sessionId:{}, connectedTo:[{}] in {} millis", getIdentity(),
+                                serverProxyCurator.getState(), mode, getServerSessionId(), connectString,
                                 TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
-                    } catch (final Exception curatorProblem) {
+                    } catch (
+
+                    final Exception curatorProblem) {
                         throw new MembershipServerException(Code.MEMBERSHIP_INIT_FAILURE, "Failed to start membership service", curatorProblem);
                     }
                     break;
                 }
             }
         } else {
-            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
-                    "Invalid attempt to start an already running membership service");
+            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM, "Invalid attempt to start an already running membership service");
         }
     }
 
@@ -300,9 +301,6 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                 // serverProxy.getState(), serverSessionId);
                                 logger.info("Stopped ZkCohortMembership [{}], state:{}, mode:{}, sessionId:{}",
                                         getIdentity(), serverProxyZk.getState(), mode, getServerSessionId());
-                            } catch (final KeeperException keeperProblem) {
-                                // mostly ignore
-                                logger.error(keeperProblem);
                             } catch (InterruptedException problem) {
                                 Thread.currentThread().interrupt();
                             } finally {
@@ -318,12 +316,15 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         try {
                             logger.info("Stopping ZkCohortMembership [{}], state:{}, mode:{}, sessionId:{}",
                                     getIdentity(), serverProxyCurator.getState(), mode, getServerSessionId());
+                            for (final String namespace : trackedNamespaces) {
+                                logger.info("Remaining tree nodes:{}", flattenTree("/" + namespace));
+                            }
                             serverProxyCurator.close();
                             logger.info("Stopped ZkCohortMembership [{}], state:{}, mode:{}, sessionId:{}",
                                     getIdentity(), serverProxyCurator.getState(), mode, getServerSessionId());
-                        } catch (final Exception keeperProblem) {
+                        } catch (final Exception problem) {
                             // mostly ignore
-                            logger.error(keeperProblem);
+                            logger.error(problem);
                         } finally {
                             serverProxyCurator = null;
                         }
@@ -343,7 +344,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public boolean newNamespace(final String namespace) throws MembershipServerException {
+    public boolean newNamespace(final String namespace, final byte[] namespaceMetadata) throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -365,7 +366,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     if (serverProxyZk.exists(namespacePath, false) == null) {
                         logger.debug("Creating namespace {}", namespacePath);
                         final Stat namespaceStat = new Stat();
-                        namespacePath = serverProxyZk.create(namespacePath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                        namespacePath = serverProxyZk.create(namespacePath, namespaceMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
                                 CreateMode.PERSISTENT, namespaceStat);
                         logger.debug("namespace:{}, stat:{}", namespacePath, namespaceStat);
                         logger.info("Created namespace:{}, zxid:{}", namespacePath, namespaceStat.getCzxid());
@@ -412,7 +413,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.debug("Creating namespace {}", namespacePath);
                         final Stat namespaceStat = new Stat();
                         namespacePath = serverProxyCurator.create().storingStatIn(namespaceStat).withMode(CreateMode.PERSISTENT)
-                                .forPath(namespacePath);
+                                .forPath(namespacePath, namespaceMetadata);
                         logger.debug("namespace:{}, stat:{}", namespacePath, namespaceStat);
                         logger.info("Created namespace:{}, zxid:{}", namespacePath, namespaceStat.getCzxid());
 
@@ -514,7 +515,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public boolean newCohortType(final String namespace, final CohortType cohortType) throws MembershipServerException {
+    public boolean newCohortType(final String namespace, final CohortType cohortType, final byte[] cohortTypeMetadata)
+            throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -537,7 +539,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     if (serverProxyZk.exists(cohortTypePath, false) == null) {
                         logger.debug("Creating cohort type {}", cohortTypePath);
                         final Stat cohortTypeStat = new Stat();
-                        cohortTypePath = serverProxyZk.create(cohortTypePath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                        cohortTypePath = serverProxyZk.create(cohortTypePath, cohortTypeMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
                                 CreateMode.PERSISTENT, cohortTypeStat);
                         success = true;
                         logger.debug("cohort type:{}, stat:{}", cohortTypePath, cohortTypeStat);
@@ -568,7 +570,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.debug("Creating cohort type {}", cohortTypePath);
                         final Stat cohortTypeStat = new Stat();
                         cohortTypePath = serverProxyCurator.create().storingStatIn(cohortTypeStat).withMode(CreateMode.PERSISTENT)
-                                .forPath(cohortTypePath);
+                                .forPath(cohortTypePath, cohortTypeMetadata);
                         success = true;
                         logger.debug("cohort type:{}, stat:{}", cohortTypePath, cohortTypeStat);
                         logger.info("Created cohort type:{}, zxid:{}", cohortTypePath, cohortTypeStat.getCzxid());
@@ -590,7 +592,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public Cohort newCohort(final String namespace, final String cohortId, final CohortType cohortType)
+    public Cohort newCohort(final String namespace, final String cohortId, final CohortType cohortType, final byte[] cohortMetadata)
             throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
@@ -619,7 +621,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     if (serverProxyZk.exists(cohortChildPath, false) == null) {
                         logger.debug("Creating cohort {}", cohortChildPath);
                         final Stat cohortStat = new Stat();
-                        cohortChildPath = serverProxyZk.create(cohortChildPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                        cohortChildPath = serverProxyZk.create(cohortChildPath, cohortMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
                                 CreateMode.PERSISTENT, cohortStat);
                         logger.debug("cohort:{}, stat:{}", cohortChildPath, cohortStat);
                         logger.info("Created cohort:{}, zxid:{}", cohortChildPath, cohortStat.getCzxid());
@@ -704,7 +706,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.debug("Creating cohort {}", cohortChildPath);
                         final Stat cohortStat = new Stat();
                         cohortChildPath = serverProxyCurator.create().storingStatIn(cohortStat).withMode(CreateMode.PERSISTENT)
-                                .forPath(cohortChildPath);
+                                .forPath(cohortChildPath, cohortMetadata);
                         logger.debug("cohort:{}, stat:{}", cohortChildPath, cohortStat);
                         logger.info("Created cohort:{}, zxid:{}", cohortChildPath, cohortStat.getCzxid());
 
@@ -729,6 +731,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         // }
 
                         final CuratorWatcher membershipChangedWatcher = new CuratorWatcher() {
+
                             @Override
                             public void process(final WatchedEvent watchedEvent) {
                                 logger.debug("Membership changed, {}", watchedEvent);
@@ -844,7 +847,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public Node newNode(final String namespace, final String nodeId, final NodePersona persona, final String address)
+    public Node newNode(final String namespace, final String nodeId, final NodePersona persona, final byte[] nodeMetadata)
             throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
@@ -869,11 +872,11 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.debug("Creating node {}", nodeChildPath);
                         final Stat nodeStat = new Stat();
                         // TODO: save data in znode
-                        nodeChildPath = serverProxyZk.create(nodeChildPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                        nodeChildPath = serverProxyZk.create(nodeChildPath, nodeMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
                                 CreateMode.EPHEMERAL, nodeStat);
                         logger.debug("node:{}, stat:{}", nodeChildPath, nodeStat);
 
-                        node = Node.newBuilder().setAddress(address).setId(nodeId).setPath(nodeChildPath).build();
+                        node = Node.newBuilder().setId(nodeId).setPath(nodeChildPath).build();
                         logger.info("Created node {}, zxid:{}", node, nodeStat.getCzxid());
 
                         final Watcher nodeChangedWatcher = new Watcher() {
@@ -934,13 +937,15 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.debug("Creating node {}", nodeChildPath);
                         final Stat nodeStat = new Stat();
                         // TODO: save data in znode
-                        nodeChildPath = serverProxyCurator.create().storingStatIn(nodeStat).withMode(CreateMode.EPHEMERAL).forPath(nodeChildPath);
+                        nodeChildPath = serverProxyCurator.create().storingStatIn(nodeStat).withMode(CreateMode.EPHEMERAL).forPath(nodeChildPath,
+                                nodeMetadata);
                         logger.debug("node:{}, stat:{}", nodeChildPath, nodeStat);
 
-                        node = Node.newBuilder().setAddress(address).setId(nodeId).setPath(nodeChildPath).build();
+                        node = Node.newBuilder().setId(nodeId).setPath(nodeChildPath).build();
                         logger.info("Created node {}, zxid:{}", node, nodeStat.getCzxid());
 
                         final CuratorWatcher nodeChangedWatcher = new CuratorWatcher() {
+
                             @Override
                             public void process(final WatchedEvent watchedEvent) {
                                 logger.debug("Node changed, {}", watchedEvent);
@@ -974,7 +979,9 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     } else {
                         logger.warn("Failed to locate node tree {}", nodeChildPath);
                     }
-                } catch (final Exception curatorException) {
+                } catch (
+
+                final Exception curatorException) {
                     if (curatorException instanceof MembershipServerException) {
                         throw MembershipServerException.class.cast(curatorException);
                     } else {
@@ -1068,7 +1075,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
     @Override
     public Cohort joinCohort(final String namespace, final String memberId, final String cohortId,
-            final CohortType cohortType, final String nodeId) throws MembershipServerException {
+            final CohortType cohortType, final String nodeId, final byte[] memberMetadata) throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -1101,7 +1108,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     logger.debug("Creating member {}", memberChildPath);
                     // TODO: save data in znode
                     final Stat memberStat = new Stat();
-                    memberChildPath = serverProxyZk.create(memberChildPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                    memberChildPath = serverProxyZk.create(memberChildPath, memberMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
                             CreateMode.EPHEMERAL, memberStat);
                     logger.debug("member:{}, stat:{}", memberChildPath, memberStat);
 
@@ -1172,7 +1179,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     logger.debug("Creating member {}", memberChildPath);
                     // TODO: save data in znode
                     final Stat memberStat = new Stat();
-                    memberChildPath = serverProxyCurator.create().storingStatIn(memberStat).withMode(CreateMode.EPHEMERAL).forPath(memberChildPath);
+                    memberChildPath = serverProxyCurator.create().storingStatIn(memberStat).withMode(CreateMode.EPHEMERAL).forPath(memberChildPath,
+                            memberMetadata);
                     logger.debug("member:{}, stat:{}", memberChildPath, memberStat);
 
                     final Member member = Member.newBuilder().setMemberId(memberId).setCohortType(cohortType)
@@ -1180,6 +1188,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     logger.info("Created member {}, zxid:{}", member, memberStat.getCzxid());
 
                     final CuratorWatcher membershipChangedCuratorWatcher = new CuratorWatcher() {
+
                         @Override
                         public void process(final WatchedEvent watchedEvent) {
                             // logger.info("Membership changed, {}", watchedEvent);
@@ -1241,8 +1250,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     membershipEditWatcher.start();
                     membershipEditWatcher.getListenable().addListener(membershipChangedWatcher);
 
-                    cohort = describeCohort(namespace, cohortId, cohortType);
-                } catch (final Exception curatorException) {
+                    cohort =
+
+                            describeCohort(namespace, cohortId, cohortType);
+                } catch (
+
+                final Exception curatorException) {
                     if (curatorException instanceof MembershipServerException) {
                         throw MembershipServerException.class.cast(curatorException);
                     } else {
@@ -1756,7 +1769,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         return idempotent;
     }
 
-    private List<String> flattenTree(final String subTreeRoot) throws KeeperException, InterruptedException {
+    private List<String> flattenTree(final String subTreeRoot) {
         final List<String> flattened = new ArrayList<>();
         if (subTreeRoot != null && !subTreeRoot.trim().isEmpty()) {
             // run breadth first search
@@ -1765,11 +1778,33 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             flattened.add(subTreeRoot);
             while (!queue.isEmpty()) {
                 final String node = queue.poll();
-                final List<String> childNodes = serverProxyZk.getChildren(node, false);
-                for (final String childNode : childNodes) {
-                    final String childNodePath = node + "/" + childNode;
-                    queue.add(childNodePath);
-                    flattened.add(childNodePath);
+                List<String> childNodes = null;
+                switch (mode) {
+                    case ZK_DIRECT: {
+                        try {
+                            childNodes = serverProxyZk.getChildren(node, false);
+                        } catch (KeeperException | InterruptedException problem) {
+                            // logger.error(String.format("flattenTree encountered a problem while flattening %s", subTreeRoot), problem);
+                        }
+                        break;
+                    }
+                    case CURATOR: {
+                        try {
+                            childNodes = serverProxyCurator.getChildren().forPath(node);
+                        } catch (Exception problem) {
+                            // logger.error(String.format("flattenTree encountered a problem while flattening %s", subTreeRoot), problem);
+                        }
+                        break;
+                    }
+                }
+                if (childNodes != null) {
+                    for (final String childNode : childNodes) {
+                        if (childNode != null) {
+                            final String childNodePath = node + "/" + childNode;
+                            queue.add(childNodePath);
+                            flattened.add(childNodePath);
+                        }
+                    }
                 }
             }
         }

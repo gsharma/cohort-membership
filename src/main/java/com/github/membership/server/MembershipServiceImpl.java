@@ -63,7 +63,7 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             final StreamObserver<NewNamespaceResponse> responseObserver) {
         try {
             final String namespace = request.getNamespace();
-            final boolean success = membershipDelegate.newNamespace(namespace);
+            final boolean success = membershipDelegate.newNamespace(namespace, null);
             final NewNamespaceResponse response = NewNamespaceResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
@@ -79,7 +79,7 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
         try {
             final String namespace = request.getNamespace();
             final CohortType cohortType = request.getCohortType();
-            final boolean success = membershipDelegate.newCohortType(namespace, cohortType);
+            final boolean success = membershipDelegate.newCohortType(namespace, cohortType, null);
             final NewCohortTypeResponse response = NewCohortTypeResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
@@ -95,7 +95,7 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
             final CohortType cohortType = request.getCohortType();
-            final Cohort cohort = membershipDelegate.newCohort(namespace, cohortId, cohortType);
+            final Cohort cohort = membershipDelegate.newCohort(namespace, cohortId, cohortType, null);
             final NewCohortResponse response = NewCohortResponse.newBuilder().setCohort(cohort).build();
             logger.debug(response);
             responseObserver.onNext(response);
@@ -110,9 +110,9 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
         try {
             final String namespace = request.getNamespace();
             final String nodeId = request.getNodeId();
-            final String address = request.getAddress();
+            // final String address = request.getAddress();
             final NodePersona persona = request.getPersona();
-            final Node node = membershipDelegate.newNode(namespace, nodeId, persona, address);
+            final Node node = membershipDelegate.newNode(namespace, nodeId, persona, null);
             final NewNodeResponse response = NewNodeResponse.newBuilder().setNode(node).build();
             logger.debug(response);
             responseObserver.onNext(response);
@@ -159,7 +159,7 @@ public final class MembershipServiceImpl extends MembershipServiceImplBase {
             final CohortType cohortType = request.getCohortType();
             final String memberId = request.getMemberId();
             final String nodeId = request.getNodeId();
-            final Cohort cohort = membershipDelegate.joinCohort(namespace, memberId, cohortId, cohortType, nodeId);
+            final Cohort cohort = membershipDelegate.joinCohort(namespace, memberId, cohortId, cohortType, nodeId, null);
             final JoinCohortResponse response = JoinCohortResponse.newBuilder().setCohort(cohort).build();
             logger.debug(response);
             responseObserver.onNext(response);
