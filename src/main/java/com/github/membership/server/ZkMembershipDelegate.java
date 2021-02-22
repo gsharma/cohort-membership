@@ -1791,7 +1791,135 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     @Override
     public void streamMembershipChanges(final String namespace, final String cohortId, final CohortType cohortType,
             final BlockingQueue<MembershipUpdate> updates) throws MembershipServerException {
-        // TODO
+        final String membersChildPath = "/" + namespace + "/" + cohortType + "/" + cohortId + "/members";
+        switch (mode) {
+            case ZK_DIRECT: {
+                try {
+                    final Watcher membershipChangedWatcher = new Watcher() {
+                        @Override
+                        public void process(final WatchedEvent watchedEvent) {
+                            logger.debug("Membership changed, {}", watchedEvent);
+                            switch (watchedEvent.getType()) {
+                                case NodeCreated:
+                                    logger.info("Member added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    break;
+                                case NodeDeleted:
+                                    logger.info("Member left or died, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                case NodeDataChanged:
+                                    logger.info("Member data changed, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                case NodeChildrenChanged:
+                                    logger.info("Membership changed, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                default:
+                                    logger.info("Membership change triggered, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent);
+                                    break;
+                            }
+                            List<Member> updatedMembers = null;
+                            try {
+                                final Cohort updatedCohort = describeCohort(namespace, cohortId, cohortType);
+                                if (updatedCohort != null) {
+                                    updatedMembers = updatedCohort.getMembersList();
+                                    if (updatedMembers != null) {
+                                        final MembershipUpdate update = MembershipUpdate.newBuilder().addAllMembers(updatedMembers).build();
+                                        updates.offer(update);
+                                        logger.info("Updated members:[{}]", updatedMembers);
+                                    }
+                                }
+                            } catch (final MembershipServerException problem) {
+                                switch (problem.getCode()) {
+                                    case INVALID_MEMBERSHIP_LCM:
+                                        break;
+                                    default:
+                                        logger.error(String.format("Problem encountered while trying to describe cohortId:%s",
+                                                cohortId), problem);
+                                        break;
+                                }
+                            }
+                        }
+                    };
+                    serverProxyZk.getChildren(membersChildPath, membershipChangedWatcher);
+                } catch (final KeeperException keeperException) {
+                    if (keeperException instanceof KeeperException.NodeExistsException) {
+                        // node already exists
+                    } else {
+                        // fix later
+                        throw new MembershipServerException(Code.UNKNOWN_FAILURE, keeperException);
+                    }
+                } catch (final InterruptedException interruptedException) {
+                    // fix later
+                    throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
+                }
+                break;
+            }
+            case CURATOR: {
+                try {
+                    final CuratorWatcher membershipChangedWatcher = new CuratorWatcher() {
+                        @Override
+                        public void process(final WatchedEvent watchedEvent) {
+                            logger.info("Membership changed, {}", watchedEvent);
+                            switch (watchedEvent.getType()) {
+                                case NodeCreated:
+                                    logger.info("Member added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    break;
+                                case NodeDeleted:
+                                    logger.info("Member left or died, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                case NodeDataChanged:
+                                    logger.info("Member data changed, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                case NodeChildrenChanged:
+                                    logger.info("Membership changed, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                default:
+                                    logger.info("Membership change triggered, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent);
+                                    break;
+                            }
+                            List<Member> updatedMembers = null;
+                            try {
+                                final Cohort updatedCohort = describeCohort(namespace, cohortId, cohortType);
+                                if (updatedCohort != null) {
+                                    updatedMembers = updatedCohort.getMembersList();
+                                    if (updatedMembers != null) {
+                                        final MembershipUpdate update = MembershipUpdate.newBuilder().addAllMembers(updatedMembers).build();
+                                        updates.offer(update);
+                                        logger.info("Updated members:[{}]", updatedMembers);
+                                    }
+                                }
+                            } catch (final MembershipServerException problem) {
+                                switch (problem.getCode()) {
+                                    case INVALID_MEMBERSHIP_LCM:
+                                        break;
+                                    default:
+                                        logger.error(String.format("Problem encountered while trying to describe cohortId:%s",
+                                                cohortId), problem);
+                                        break;
+                                }
+                            }
+                        }
+                    };
+                    serverProxyCurator.getChildren().usingWatcher(membershipChangedWatcher).forPath(membersChildPath);
+                } catch (final Exception curatorException) {
+                    if (curatorException instanceof MembershipServerException) {
+                        throw MembershipServerException.class.cast(curatorException);
+                    } else {
+                        // fix later
+                        throw new MembershipServerException(Code.UNKNOWN_FAILURE, curatorException);
+                    }
+                }
+                break;
+            }
+        }
+
     }
 
     @Override
@@ -1837,6 +1965,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                 try {
                                     updatedNodes = listNodes(namespace);
                                     if (updatedNodes != null) {
+                                        final NodeUpdate update = NodeUpdate.newBuilder().addAllNodes(updatedNodes).build();
+                                        updates.offer(update);
                                         logger.info("Updated nodes:[{}]", updatedNodes);
                                     }
                                 } catch (final MembershipServerException problem) {
@@ -1905,6 +2035,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                 try {
                                     updatedNodes = listNodes(namespace);
                                     if (updatedNodes != null) {
+                                        final NodeUpdate update = NodeUpdate.newBuilder().addAllNodes(updatedNodes).build();
+                                        updates.offer(update);
                                         logger.info("Updated nodes:[{}]", updatedNodes);
                                     }
                                 } catch (final MembershipServerException problem) {
