@@ -749,18 +749,22 @@ public final class CohortMembershipTest {
         final List<InstanceSpec> instanceSpecs = new ArrayList<>();
         for (int iter = 0; iter < 3; iter++) {
             final String serverHost = "localhost";
-            final int serverPort = 4000 + iter;
+            final int serverPort = 2000 + iter;
             final File dataDir = new File("target/zkDataDir/" + iter);
-            final InstanceSpec instanceSpec = new InstanceSpec(dataDir, serverPort, -1, -1, true, -1, -1, 2);
+            final InstanceSpec instanceSpec = new InstanceSpec(dataDir, serverPort, -1, -1, true, -1, -1, 2, null, serverHost);
             instanceSpecs.add(instanceSpec);
-
             // serverAddresses.add(new InetSocketAddress(serverHost, serverPort));
         }
 
         // System.setProperty("zk.servers", "localhost:" + instanceSpec.getPort());
         System.setProperty("zookeeper.serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
 
-        // testingCluster = new TestingCluster(instanceSpecs);
+        // zkCluster = new TestingCluster(instanceSpecs);
+        // for (final TestingZooKeeperServer server : zkCluster.getServers()) {
+        // logger.info(server.getInstanceSpec());
+        // assertNotNull(server.getQuorumPeer());
+        // }
+        // zkCluster = new TestingCluster(TestingCluster.makeSpecs(3));
         zkCluster = new TestingCluster(3);
         zkCluster.start();
 
