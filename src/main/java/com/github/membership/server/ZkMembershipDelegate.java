@@ -22,6 +22,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.framework.recipes.watch.PersistentWatcher;
@@ -671,9 +672,28 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                                 watchedEvent);
                                         break;
                                 }
+                                List<Member> updatedMembers = null;
+                                try {
+                                    final Cohort updatedCohort = describeCohort(namespace, cohortId, cohortType);
+                                    if (updatedCohort != null) {
+                                        updatedMembers = updatedCohort.getMembersList();
+                                        if (updatedMembers != null) {
+                                            logger.info("Updated members:[{}]", updatedMembers);
+                                        }
+                                    }
+                                } catch (final MembershipServerException problem) {
+                                    switch (problem.getCode()) {
+                                        case INVALID_MEMBERSHIP_LCM:
+                                            break;
+                                        default:
+                                            logger.error(String.format("Problem encountered while trying to describe cohortId:%s",
+                                                    cohortId), problem);
+                                            break;
+                                    }
+                                }
                             }
                         };
-                        // serverProxyZk.getChildren(membersChildPath, membershipChangedWatcher);
+                        serverProxyZk.getChildren(membersChildPath, membershipChangedWatcher);
                     } else {
                         logger.warn("Failed to locate cohort child tree {}", cohortChildPath);
                     }
@@ -731,10 +751,9 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         // }
 
                         final CuratorWatcher membershipChangedWatcher = new CuratorWatcher() {
-
                             @Override
                             public void process(final WatchedEvent watchedEvent) {
-                                logger.debug("Membership changed, {}", watchedEvent);
+                                logger.info("Membership changed, {}", watchedEvent);
                                 switch (watchedEvent.getType()) {
                                     case NodeCreated:
                                         logger.info("Member added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
@@ -756,9 +775,28 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                                 watchedEvent);
                                         break;
                                 }
+                                List<Member> updatedMembers = null;
+                                try {
+                                    final Cohort updatedCohort = describeCohort(namespace, cohortId, cohortType);
+                                    if (updatedCohort != null) {
+                                        updatedMembers = updatedCohort.getMembersList();
+                                        if (updatedMembers != null) {
+                                            logger.info("Updated members:[{}]", updatedMembers);
+                                        }
+                                    }
+                                } catch (final MembershipServerException problem) {
+                                    switch (problem.getCode()) {
+                                        case INVALID_MEMBERSHIP_LCM:
+                                            break;
+                                        default:
+                                            logger.error(String.format("Problem encountered while trying to describe cohortId:%s",
+                                                    cohortId), problem);
+                                            break;
+                                    }
+                                }
                             }
                         };
-                        // serverProxyCurator.getChildren().usingWatcher(membershipChangedWatcher).forPath(membersChildPath);
+                        serverProxyCurator.getChildren().usingWatcher(membershipChangedWatcher).forPath(membersChildPath);
                     } else {
                         logger.warn("Failed to locate cohort child tree {}", cohortChildPath);
                     }
@@ -871,7 +909,6 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     if (serverProxyZk.exists(nodeChildPath, false) == null) {
                         logger.debug("Creating node {}", nodeChildPath);
                         final Stat nodeStat = new Stat();
-                        // TODO: save data in znode
                         nodeChildPath = serverProxyZk.create(nodeChildPath, nodeMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
                                 CreateMode.EPHEMERAL, nodeStat);
                         logger.debug("node:{}, stat:{}", nodeChildPath, nodeStat);
@@ -906,6 +943,22 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                                     watchedEvent);
                                             break;
                                     }
+                                    List<Node> updatedNodes = null;
+                                    try {
+                                        updatedNodes = listNodes(namespace);
+                                        if (updatedNodes != null) {
+                                            logger.info("Updated nodes:[{}]", updatedNodes);
+                                        }
+                                    } catch (final MembershipServerException problem) {
+                                        switch (problem.getCode()) {
+                                            case INVALID_MEMBERSHIP_LCM:
+                                                break;
+                                            default:
+                                                logger.error(String.format("Problem encountered while trying to list nodes for namespace:%s",
+                                                        namespace), problem);
+                                                break;
+                                        }
+                                    }
                                 }
                             }
                         };
@@ -936,7 +989,6 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     if (serverProxyCurator.checkExists().forPath(nodeChildPath) == null) {
                         logger.debug("Creating node {}", nodeChildPath);
                         final Stat nodeStat = new Stat();
-                        // TODO: save data in znode
                         nodeChildPath = serverProxyCurator.create().storingStatIn(nodeStat).withMode(CreateMode.EPHEMERAL).forPath(nodeChildPath,
                                 nodeMetadata);
                         logger.debug("node:{}, stat:{}", nodeChildPath, nodeStat);
@@ -945,10 +997,9 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.info("Created node {}, zxid:{}", node, nodeStat.getCzxid());
 
                         final CuratorWatcher nodeChangedWatcher = new CuratorWatcher() {
-
                             @Override
                             public void process(final WatchedEvent watchedEvent) {
-                                logger.debug("Node changed, {}", watchedEvent);
+                                logger.info("Node changed, {}", watchedEvent);
                                 if (watchedEvent.getType() != EventType.None) {
                                     switch (watchedEvent.getType()) {
                                         case NodeCreated:
@@ -971,6 +1022,22 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                             logger.info("Node change triggered, sessionId:{}, {}", getServerSessionId(),
                                                     watchedEvent);
                                             break;
+                                    }
+                                    List<Node> updatedNodes = null;
+                                    try {
+                                        updatedNodes = listNodes(namespace);
+                                        if (updatedNodes != null) {
+                                            logger.info("Updated nodes:[{}]", updatedNodes);
+                                        }
+                                    } catch (final MembershipServerException problem) {
+                                        switch (problem.getCode()) {
+                                            case INVALID_MEMBERSHIP_LCM:
+                                                break;
+                                            default:
+                                                logger.error(String.format("Problem encountered while trying to list nodes for namespace:%s",
+                                                        namespace), problem);
+                                                break;
+                                        }
                                     }
                                 }
                             }
@@ -1106,7 +1173,6 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
                     String memberChildPath = cohortMembersPath + "/" + memberId;
                     logger.debug("Creating member {}", memberChildPath);
-                    // TODO: save data in znode
                     final Stat memberStat = new Stat();
                     memberChildPath = serverProxyZk.create(memberChildPath, memberMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
                             CreateMode.EPHEMERAL, memberStat);
@@ -1143,7 +1209,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                             }
                         }
                     };
-                    serverProxyZk.exists(memberChildPath, membershipChangedWatcher);
+                    // serverProxyZk.exists(memberChildPath, membershipChangedWatcher);
                     // serverProxy.getChildren(cohortMembersPath, membershipChangedWatcher);
 
                     cohort = describeCohort(namespace, cohortId, cohortType);
@@ -1177,7 +1243,6 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
                     String memberChildPath = cohortMembersPath + "/" + memberId;
                     logger.debug("Creating member {}", memberChildPath);
-                    // TODO: save data in znode
                     final Stat memberStat = new Stat();
                     memberChildPath = serverProxyCurator.create().storingStatIn(memberStat).withMode(CreateMode.EPHEMERAL).forPath(memberChildPath,
                             memberMetadata);
@@ -1246,13 +1311,11 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         }
                     };
 
-                    final PersistentWatcher membershipEditWatcher = new PersistentWatcher(serverProxyCurator, memberChildPath, true);
-                    membershipEditWatcher.start();
-                    membershipEditWatcher.getListenable().addListener(membershipChangedWatcher);
+                    // final PersistentWatcher membershipEditWatcher = new PersistentWatcher(serverProxyCurator, memberChildPath, true);
+                    // membershipEditWatcher.start();
+                    // membershipEditWatcher.getListenable().addListener(membershipChangedWatcher);
 
-                    cohort =
-
-                            describeCohort(namespace, cohortId, cohortType);
+                    cohort = describeCohort(namespace, cohortId, cohortType);
                 } catch (
 
                 final Exception curatorException) {
@@ -1295,7 +1358,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     if (serverProxyZk.exists(cohortMembersPath, false) == null) {
                         final String warning = "Failed to locate member tree " + cohortMembersPath;
                         logger.warn(warning);
-                        throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
+                        return cohort;
+                        // throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
                     }
                     final List<String> memberIds = serverProxyZk.getChildren(cohortMembersPath, false);
                     final List<Member> members = new ArrayList<>();
@@ -1331,7 +1395,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     if (serverProxyCurator.checkExists().forPath(cohortMembersPath) == null) {
                         final String warning = "Failed to locate member tree " + cohortMembersPath;
                         logger.warn(warning);
-                        throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
+                        return cohort;
+                        // throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
                     }
                     final List<String> memberIds = serverProxyCurator.getChildren().forPath(cohortMembersPath);
                     final List<Member> members = new ArrayList<>();
