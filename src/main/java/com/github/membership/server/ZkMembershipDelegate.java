@@ -8,13 +8,10 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
-// import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
-// import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -45,9 +42,11 @@ import com.github.membership.rpc.Cohort;
 import com.github.membership.rpc.CohortType;
 import com.github.membership.rpc.Member;
 import com.github.membership.rpc.MembershipUpdate;
+import com.github.membership.rpc.MembershipUpdateType;
 import com.github.membership.rpc.Node;
 import com.github.membership.rpc.NodePersona;
 import com.github.membership.rpc.NodeUpdate;
+import com.github.membership.rpc.NodeUpdateType;
 import com.github.membership.server.MembershipServerException.Code;
 
 /**
@@ -1735,6 +1734,10 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
     @Override
     public boolean acquireLock(final String namespace, final String entity, final long waitSeconds) throws MembershipServerException {
+        if (!isRunning()) {
+            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
+                    "Invalid attempt to operate an already stopped membership service");
+        }
         boolean acquired = false;
         final String lockPath = "/" + namespace + "/" + entity;
         switch (mode) {
@@ -1762,6 +1765,10 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
     @Override
     public boolean releaseLock(final String namespace, final String entity) throws MembershipServerException {
+        if (!isRunning()) {
+            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
+                    "Invalid attempt to operate an already stopped membership service");
+        }
         boolean released = false;
         final String lockPath = "/" + namespace + "/" + entity;
         switch (mode) {
@@ -1790,8 +1797,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
     @Override
     public void streamMembershipChanges(final String namespace, final String cohortId, final CohortType cohortType,
-            final BlockingQueue<MembershipUpdate> updates) throws MembershipServerException {
-        final String membersChildPath = "/" + namespace + "/" + cohortType + "/" + cohortId + "/members";
+            final MembershipUpdateCallback membershipUpdateCallback) throws MembershipServerException {
+        if (!isRunning()) {
+            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
+                    "Invalid attempt to operate an already stopped membership service");
+        }
+        final String membersChildPath = "/" + namespace + "/cohorts/" + cohortType + "/" + cohortId + "/members";
         switch (mode) {
             case ZK_DIRECT: {
                 try {
@@ -1800,25 +1811,30 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         public void process(final WatchedEvent watchedEvent) {
                             logger.debug("Membership changed, {}", watchedEvent);
                             switch (watchedEvent.getType()) {
-                                case NodeCreated:
+                                case NodeCreated: {
                                     logger.info("Member added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                                     break;
-                                case NodeDeleted:
+                                }
+                                case NodeDeleted: {
                                     logger.info("Member left or died, sessionId:{}, {}", getServerSessionId(),
                                             watchedEvent.getPath());
                                     break;
-                                case NodeDataChanged:
+                                }
+                                case NodeDataChanged: {
                                     logger.info("Member data changed, sessionId:{}, {}", getServerSessionId(),
                                             watchedEvent.getPath());
                                     break;
-                                case NodeChildrenChanged:
+                                }
+                                case NodeChildrenChanged: {
                                     logger.info("Membership changed, sessionId:{}, {}", getServerSessionId(),
                                             watchedEvent.getPath());
                                     break;
-                                default:
+                                }
+                                default: {
                                     logger.info("Membership change triggered, sessionId:{}, {}", getServerSessionId(),
                                             watchedEvent);
                                     break;
+                                }
                             }
                             List<Member> updatedMembers = null;
                             try {
@@ -1826,19 +1842,29 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                 if (updatedCohort != null) {
                                     updatedMembers = updatedCohort.getMembersList();
                                     if (updatedMembers != null) {
-                                        final MembershipUpdate update = MembershipUpdate.newBuilder().addAllMembers(updatedMembers).build();
-                                        updates.offer(update);
                                         logger.info("Updated members:[{}]", updatedMembers);
+                                        final MembershipUpdate update = MembershipUpdate.newBuilder().setNamespace(namespace)
+                                                .setUpdateType(MembershipUpdateType.UPDATED_COHORT_MEMBERS).setCohortId(cohortId)
+                                                .setCohortType(cohortType).addAllMembers(updatedMembers).build();
+                                        membershipUpdateCallback.accept(update);
                                     }
+                                } else {
+                                    logger.info("Deleted cohort:{}", cohortId);
+                                    final MembershipUpdate update = MembershipUpdate.newBuilder().setNamespace(namespace)
+                                            .setUpdateType(MembershipUpdateType.DELETED_COHORT).setCohortId(cohortId)
+                                            .setCohortType(cohortType).build();
+                                    membershipUpdateCallback.accept(update);
                                 }
                             } catch (final MembershipServerException problem) {
                                 switch (problem.getCode()) {
-                                    case INVALID_MEMBERSHIP_LCM:
+                                    case INVALID_MEMBERSHIP_LCM: {
                                         break;
-                                    default:
+                                    }
+                                    default: {
                                         logger.error(String.format("Problem encountered while trying to describe cohortId:%s",
                                                 cohortId), problem);
                                         break;
+                                    }
                                 }
                             }
                         }
@@ -1864,25 +1890,30 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         public void process(final WatchedEvent watchedEvent) {
                             logger.info("Membership changed, {}", watchedEvent);
                             switch (watchedEvent.getType()) {
-                                case NodeCreated:
+                                case NodeCreated: {
                                     logger.info("Member added, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
                                     break;
-                                case NodeDeleted:
+                                }
+                                case NodeDeleted: {
                                     logger.info("Member left or died, sessionId:{}, {}", getServerSessionId(),
                                             watchedEvent.getPath());
                                     break;
-                                case NodeDataChanged:
+                                }
+                                case NodeDataChanged: {
                                     logger.info("Member data changed, sessionId:{}, {}", getServerSessionId(),
                                             watchedEvent.getPath());
                                     break;
-                                case NodeChildrenChanged:
+                                }
+                                case NodeChildrenChanged: {
                                     logger.info("Membership changed, sessionId:{}, {}", getServerSessionId(),
                                             watchedEvent.getPath());
                                     break;
-                                default:
+                                }
+                                default: {
                                     logger.info("Membership change triggered, sessionId:{}, {}", getServerSessionId(),
                                             watchedEvent);
                                     break;
+                                }
                             }
                             List<Member> updatedMembers = null;
                             try {
@@ -1890,19 +1921,29 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                 if (updatedCohort != null) {
                                     updatedMembers = updatedCohort.getMembersList();
                                     if (updatedMembers != null) {
-                                        final MembershipUpdate update = MembershipUpdate.newBuilder().addAllMembers(updatedMembers).build();
-                                        updates.offer(update);
                                         logger.info("Updated members:[{}]", updatedMembers);
+                                        final MembershipUpdate update = MembershipUpdate.newBuilder().setNamespace(namespace)
+                                                .setUpdateType(MembershipUpdateType.UPDATED_COHORT_MEMBERS).setCohortId(cohortId)
+                                                .setCohortType(cohortType).addAllMembers(updatedMembers).build();
+                                        membershipUpdateCallback.accept(update);
                                     }
+                                } else {
+                                    logger.info("Deleted cohort:{}", cohortId);
+                                    final MembershipUpdate update = MembershipUpdate.newBuilder().setNamespace(namespace)
+                                            .setUpdateType(MembershipUpdateType.DELETED_COHORT).setCohortId(cohortId)
+                                            .setCohortType(cohortType).build();
+                                    membershipUpdateCallback.accept(update);
                                 }
                             } catch (final MembershipServerException problem) {
                                 switch (problem.getCode()) {
-                                    case INVALID_MEMBERSHIP_LCM:
+                                    case INVALID_MEMBERSHIP_LCM: {
                                         break;
-                                    default:
+                                    }
+                                    default: {
                                         logger.error(String.format("Problem encountered while trying to describe cohortId:%s",
                                                 cohortId), problem);
                                         break;
+                                    }
                                 }
                             }
                         }
@@ -1923,8 +1964,13 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public void streamNodeChanges(final String namespace, final String nodeId, final BlockingQueue<NodeUpdate> updates)
+    public void streamNodeChanges(final String namespace,
+            final NodeUpdateCallback nodeUpdateCallback)
             throws MembershipServerException {
+        if (!isRunning()) {
+            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
+                    "Invalid attempt to operate an already stopped membership service");
+        }
         switch (mode) {
             case ZK_DIRECT: {
                 try {
@@ -1965,18 +2011,26 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                 try {
                                     updatedNodes = listNodes(namespace);
                                     if (updatedNodes != null) {
-                                        final NodeUpdate update = NodeUpdate.newBuilder().addAllNodes(updatedNodes).build();
-                                        updates.offer(update);
+                                        final NodeUpdate update = NodeUpdate.newBuilder().setUpdateType(NodeUpdateType.UPDATED_NODE)
+                                                .setNamespace(namespace).addAllNodes(updatedNodes).build();
+                                        nodeUpdateCallback.accept(update);
                                         logger.info("Updated nodes:[{}]", updatedNodes);
+                                    } else {
+                                        final NodeUpdate update = NodeUpdate.newBuilder().setUpdateType(NodeUpdateType.DELETED_NODE)
+                                                .setNamespace(namespace).build();
+                                        nodeUpdateCallback.accept(update);
+                                        logger.info("Deleted nodes");
                                     }
                                 } catch (final MembershipServerException problem) {
                                     switch (problem.getCode()) {
-                                        case INVALID_MEMBERSHIP_LCM:
+                                        case INVALID_MEMBERSHIP_LCM: {
                                             break;
-                                        default:
+                                        }
+                                        default: {
                                             logger.error(String.format("Problem encountered while trying to list nodes for namespace:%s",
                                                     namespace), problem);
                                             break;
+                                        }
                                     }
                                 }
                             }
@@ -2035,18 +2089,26 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                 try {
                                     updatedNodes = listNodes(namespace);
                                     if (updatedNodes != null) {
-                                        final NodeUpdate update = NodeUpdate.newBuilder().addAllNodes(updatedNodes).build();
-                                        updates.offer(update);
+                                        final NodeUpdate update = NodeUpdate.newBuilder().setUpdateType(NodeUpdateType.UPDATED_NODE)
+                                                .setNamespace(namespace).addAllNodes(updatedNodes).build();
+                                        nodeUpdateCallback.accept(update);
                                         logger.info("Updated nodes:[{}]", updatedNodes);
+                                    } else {
+                                        final NodeUpdate update = NodeUpdate.newBuilder().setUpdateType(NodeUpdateType.DELETED_NODE)
+                                                .setNamespace(namespace).build();
+                                        nodeUpdateCallback.accept(update);
+                                        logger.info("Deleted nodes");
                                     }
                                 } catch (final MembershipServerException problem) {
                                     switch (problem.getCode()) {
-                                        case INVALID_MEMBERSHIP_LCM:
+                                        case INVALID_MEMBERSHIP_LCM: {
                                             break;
-                                        default:
+                                        }
+                                        default: {
                                             logger.error(String.format("Problem encountered while trying to list nodes for namespace:%s",
                                                     namespace), problem);
                                             break;
+                                        }
                                     }
                                 }
                             }

@@ -30,11 +30,15 @@ import com.github.membership.rpc.NewNodeRequest;
 import com.github.membership.rpc.NewNodeResponse;
 import com.github.membership.rpc.Node;
 import com.github.membership.rpc.NodePersona;
+import com.github.membership.rpc.NodeUpdate;
+import com.github.membership.rpc.NodeUpdateRequest;
 import com.github.membership.rpc.PurgeNamespaceRequest;
 import com.github.membership.rpc.PurgeNamespaceResponse;
 import com.github.membership.rpc.ReleaseLockRequest;
 import com.github.membership.rpc.ReleaseLockResponse;
 import com.github.membership.rpc.MembershipServiceGrpc.MembershipServiceImplBase;
+import com.github.membership.rpc.MembershipUpdate;
+import com.github.membership.rpc.MembershipUpdateRequest;
 
 import java.util.List;
 
@@ -101,7 +105,34 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
             final Cohort cohort = membershipDelegate.newCohort(namespace, cohortId, cohortType, null);
             final NewCohortResponse response = NewCohortResponse.newBuilder().setCohort(cohort).build();
             logger.debug(response);
+            final MembershipUpdateCallback membershipUpdateCallback = new MembershipUpdateCallback() {
+                @Override
+                public void accept(final MembershipUpdate update) {
+                    logger.info("Membership update event, type:{}, update:[{}]", update.getUpdateType(), update);
+                }
+            };
+            membershipDelegate.streamMembershipChanges(namespace, cohortId, cohortType, membershipUpdateCallback);
             responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
+        }
+    }
+
+    @Override
+    public void membershipUpdates(final MembershipUpdateRequest request, final StreamObserver<MembershipUpdate> responseObserver) {
+        try {
+            final String namespace = request.getNamespace();
+            final String cohortId = request.getCohortId();
+            final CohortType cohortType = request.getCohortType();
+            final MembershipUpdateCallback membershipUpdateCallback = new MembershipUpdateCallback() {
+                @Override
+                public void accept(final MembershipUpdate update) {
+                    logger.info("Membership update event, type:{}, update:[{}]", update.getUpdateType(), update);
+                    responseObserver.onNext(update);
+                }
+            };
+            membershipDelegate.streamMembershipChanges(namespace, cohortId, cohortType, membershipUpdateCallback);
             responseObserver.onCompleted();
         } catch (MembershipServerException membershipProblem) {
             responseObserver.onError(toStatusRuntimeException(membershipProblem));
@@ -118,7 +149,32 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
             final Node node = membershipDelegate.newNode(namespace, nodeId, persona, null);
             final NewNodeResponse response = NewNodeResponse.newBuilder().setNode(node).build();
             logger.debug(response);
+            final NodeUpdateCallback nodeUpdateCallback = new NodeUpdateCallback() {
+                @Override
+                public void accept(final NodeUpdate update) {
+                    logger.info("Node update event, type:{} update:[{}]", update.getUpdateType(), update);
+                }
+            };
+            membershipDelegate.streamNodeChanges(namespace, nodeUpdateCallback);
             responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
+        }
+    }
+
+    @Override
+    public void nodeUpdates(final NodeUpdateRequest request, final StreamObserver<com.github.membership.rpc.NodeUpdate> responseObserver) {
+        try {
+            final String namespace = request.getNamespace();
+            final NodeUpdateCallback nodeUpdateCallback = new NodeUpdateCallback() {
+                @Override
+                public void accept(final NodeUpdate update) {
+                    logger.info("Node update event, type:{} update:[{}]", update.getUpdateType(), update);
+                    responseObserver.onNext(update);
+                }
+            };
+            membershipDelegate.streamNodeChanges(namespace, nodeUpdateCallback);
             responseObserver.onCompleted();
         } catch (MembershipServerException membershipProblem) {
             responseObserver.onError(toStatusRuntimeException(membershipProblem));
