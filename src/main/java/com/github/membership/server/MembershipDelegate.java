@@ -1,12 +1,16 @@
 package com.github.membership.server;
 
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 
 import com.github.membership.lib.Lifecycle;
 import com.github.membership.rpc.Cohort;
 import com.github.membership.rpc.CohortType;
+import com.github.membership.rpc.Member;
+import com.github.membership.rpc.MembershipUpdate;
 import com.github.membership.rpc.Node;
 import com.github.membership.rpc.NodePersona;
+import com.github.membership.rpc.NodeUpdate;
 
 public interface MembershipDelegate extends Lifecycle {
     // reloadable
@@ -46,6 +50,12 @@ public interface MembershipDelegate extends Lifecycle {
     boolean acquireLock(final String namespace, final String entity, final long waitSeconds) throws MembershipServerException;
 
     boolean releaseLock(final String namespace, final String entity) throws MembershipServerException;
+
+    void streamMembershipChanges(final String namespace, final String cohortId, final CohortType cohortType,
+            final BlockingQueue<MembershipUpdate> updates)
+            throws MembershipServerException;
+
+    void streamNodeChanges(final String namespace, final String nodeId, final BlockingQueue<NodeUpdate> updates) throws MembershipServerException;
 
     enum DelegateMode {
         ZK_DIRECT, CURATOR;

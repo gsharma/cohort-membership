@@ -46,15 +46,18 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.Status.Code;
 import io.grpc.stub.StreamObserver;
 
-public final class MembershipServiceImpl extends MembershipServiceImplBase {
+/**
+ * A grpc-based implementation for Membership Service. Note that this is not to be used directly, users should rely on the MembershipClient instead.
+ */
+final class MembershipServiceImpl extends MembershipServiceImplBase {
     private static final Logger logger = LogManager.getLogger(MembershipServiceImpl.class.getSimpleName());
 
     private MembershipDelegate membershipDelegate;
 
-    public MembershipServiceImpl() {
+    MembershipServiceImpl() {
     }
 
-    public void setDelegate(final MembershipDelegate membershipDelegate) {
+    void setDelegate(final MembershipDelegate membershipDelegate) {
         this.membershipDelegate = membershipDelegate;
     }
 

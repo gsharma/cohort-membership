@@ -181,6 +181,14 @@ message ReleaseLockResponse {
   bool success = 1;
 }
 
+message MembershipUpdate {
+  repeated Member members = 1;
+}
+
+message NodeUpdate {
+  repeated Node nodes = 1;
+}
+
 service MembershipService {
   rpc newNamespace (NewNamespaceRequest) returns (NewNamespaceResponse);
 
@@ -211,5 +219,6 @@ service MembershipService {
   rpc acquireLock (AcquireLockRequest) returns (AcquireLockResponse);
 
   rpc releaseLock (ReleaseLockRequest) returns (ReleaseLockResponse);
+
 }
 

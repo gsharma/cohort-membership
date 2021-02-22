@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 // import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -43,8 +44,10 @@ import com.github.membership.lib.Lifecycle;
 import com.github.membership.rpc.Cohort;
 import com.github.membership.rpc.CohortType;
 import com.github.membership.rpc.Member;
+import com.github.membership.rpc.MembershipUpdate;
 import com.github.membership.rpc.Node;
 import com.github.membership.rpc.NodePersona;
+import com.github.membership.rpc.NodeUpdate;
 import com.github.membership.server.MembershipServerException.Code;
 
 /**
@@ -150,10 +153,10 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                     logger.info("ZkCohortMembership zk auth failed, sessionId:{}, servers:[{}]",
                                             getServerSessionId(), connectString);
                                     break;
-                                //case Closed:
-                                //    logger.info("ZkCohortMembership zk session closed, sessionId:{}, servers:[{}]",
-                                //            getServerSessionId(), connectString);
-                                //    break;
+                                // case Closed:
+                                // logger.info("ZkCohortMembership zk session closed, sessionId:{}, servers:[{}]",
+                                // getServerSessionId(), connectString);
+                                // break;
                                 default:
                                     logger.info("ZkCohortMembership encountered:{}, sessionId:{}, servers:[{}]", watchedEvent,
                                             getServerSessionId(), connectString);
@@ -367,21 +370,21 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.debug("Creating namespace {}", namespacePath);
                         final Stat namespaceStat = new Stat();
                         namespacePath = serverProxyZk.create(namespacePath, namespaceMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                                CreateMode.PERSISTENT/*, namespaceStat*/);
+                                CreateMode.PERSISTENT/* , namespaceStat */);
                         logger.debug("namespace:{}, stat:{}", namespacePath, namespaceStat);
                         logger.info("Created namespace:{}, zxid:{}", namespacePath, namespaceStat.getCzxid());
 
                         // create cohorts root node
                         final Stat cohortRootStat = new Stat();
                         final String cohortRootPath = serverProxyZk.create(namespacePath + "/cohorts", null,
-                                ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT/*, cohortRootStat*/);
+                                ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT/* , cohortRootStat */);
                         logger.debug("cohorts root:{}, stat:{}", cohortRootPath, cohortRootStat);
                         logger.info("Created cohorts root:{}, zxid:{}", cohortRootPath, cohortRootStat.getCzxid());
 
                         // create nodes root node
                         final Stat nodeRootStat = new Stat();
                         final String nodeRootPath = serverProxyZk.create(namespacePath + "/nodes", null,
-                                ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT/*, nodeRootStat*/);
+                                ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT/* , nodeRootStat */);
                         logger.debug("nodes root:{}, stat:{}", nodeRootPath, nodeRootStat);
                         logger.info("Created nodes root:{}, zxid:{}", nodeRootPath, nodeRootStat.getCzxid());
 
@@ -540,7 +543,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.debug("Creating cohort type {}", cohortTypePath);
                         final Stat cohortTypeStat = new Stat();
                         cohortTypePath = serverProxyZk.create(cohortTypePath, cohortTypeMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                                CreateMode.PERSISTENT/*, cohortTypeStat*/);
+                                CreateMode.PERSISTENT/* , cohortTypeStat */);
                         success = true;
                         logger.debug("cohort type:{}, stat:{}", cohortTypePath, cohortTypeStat);
                         logger.info("Created cohort type:{}, zxid:{}", cohortTypePath, cohortTypeStat.getCzxid());
@@ -622,7 +625,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.debug("Creating cohort {}", cohortChildPath);
                         final Stat cohortStat = new Stat();
                         cohortChildPath = serverProxyZk.create(cohortChildPath, cohortMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                                CreateMode.PERSISTENT/*, cohortStat*/);
+                                CreateMode.PERSISTENT/* , cohortStat */);
                         logger.debug("cohort:{}, stat:{}", cohortChildPath, cohortStat);
                         logger.info("Created cohort:{}, zxid:{}", cohortChildPath, cohortStat.getCzxid());
 
@@ -635,7 +638,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.debug("Creating members root {}", membersChildPath);
                         final Stat membersChildStat = new Stat();
                         membersChildPath = serverProxyZk.create(membersChildPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                                CreateMode.PERSISTENT/*, membersChildStat*/);
+                                CreateMode.PERSISTENT/* , membersChildStat */);
                         logger.debug("members root:{}, stat:{}", membersChildPath, membersChildStat);
                         logger.info("Created members root:{}, zxid:{}", membersChildPath, membersChildStat.getCzxid());
 
@@ -909,7 +912,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.debug("Creating node {}", nodeChildPath);
                         final Stat nodeStat = new Stat();
                         nodeChildPath = serverProxyZk.create(nodeChildPath, nodeMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                                CreateMode.EPHEMERAL/*, nodeStat*/);
+                                CreateMode.EPHEMERAL/* , nodeStat */);
                         logger.debug("node:{}, stat:{}", nodeChildPath, nodeStat);
 
                         node = Node.newBuilder().setId(nodeId).setPath(nodeChildPath).build();
@@ -1045,9 +1048,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     } else {
                         logger.warn("Failed to locate node tree {}", nodeChildPath);
                     }
-                } catch (
-
-                final Exception curatorException) {
+                } catch (final Exception curatorException) {
                     if (curatorException instanceof MembershipServerException) {
                         throw MembershipServerException.class.cast(curatorException);
                     } else {
@@ -1174,7 +1175,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     logger.debug("Creating member {}", memberChildPath);
                     final Stat memberStat = new Stat();
                     memberChildPath = serverProxyZk.create(memberChildPath, memberMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                            CreateMode.EPHEMERAL/*, memberStat*/);
+                            CreateMode.EPHEMERAL/* , memberStat */);
                     logger.debug("member:{}, stat:{}", memberChildPath, memberStat);
 
                     final Member member = Member.newBuilder().setMemberId(memberId).setCohortType(cohortType)
@@ -1785,6 +1786,152 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         logger.info("Release lock, entity:{}, released:{}", lockPath, released);
         return released;
+    }
+
+    @Override
+    public void streamMembershipChanges(final String namespace, final String cohortId, final CohortType cohortType,
+            final BlockingQueue<MembershipUpdate> updates) throws MembershipServerException {
+        // TODO
+    }
+
+    @Override
+    public void streamNodeChanges(final String namespace, final String nodeId, final BlockingQueue<NodeUpdate> updates)
+            throws MembershipServerException {
+        switch (mode) {
+            case ZK_DIRECT: {
+                try {
+                    final String nodeRootPath = "/" + namespace + "/nodes";
+                    final Watcher nodeChangedWatcher = new Watcher() {
+                        @Override
+                        public void process(final WatchedEvent watchedEvent) {
+                            logger.debug("Node changed, {}", watchedEvent);
+                            if (watchedEvent.getType() != EventType.None) {
+                                switch (watchedEvent.getType()) {
+                                    case NodeCreated: {
+                                        logger.info("Node added, sessionId:{}, {}", getServerSessionId(),
+                                                watchedEvent.getPath());
+                                        break;
+                                    }
+                                    case NodeDeleted: {
+                                        logger.info("Node left or died, sessionId:{}, {}", getServerSessionId(),
+                                                watchedEvent.getPath());
+                                        break;
+                                    }
+                                    case NodeDataChanged: {
+                                        logger.info("Node data changed, sessionId:{}, {}", getServerSessionId(),
+                                                watchedEvent.getPath());
+                                        break;
+                                    }
+                                    case NodeChildrenChanged: {
+                                        logger.info("Node changed, sessionId:{}, {}", getServerSessionId(),
+                                                watchedEvent.getPath());
+                                        break;
+                                    }
+                                    default: {
+                                        logger.info("Node change triggered, sessionId:{}, {}", getServerSessionId(),
+                                                watchedEvent);
+                                        break;
+                                    }
+                                }
+                                List<Node> updatedNodes = null;
+                                try {
+                                    updatedNodes = listNodes(namespace);
+                                    if (updatedNodes != null) {
+                                        logger.info("Updated nodes:[{}]", updatedNodes);
+                                    }
+                                } catch (final MembershipServerException problem) {
+                                    switch (problem.getCode()) {
+                                        case INVALID_MEMBERSHIP_LCM:
+                                            break;
+                                        default:
+                                            logger.error(String.format("Problem encountered while trying to list nodes for namespace:%s",
+                                                    namespace), problem);
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                    };
+                    serverProxyZk.getChildren(nodeRootPath, nodeChangedWatcher);
+                } catch (final KeeperException keeperException) {
+                    if (keeperException instanceof KeeperException.NodeExistsException) {
+                        // node already exists
+                    } else {
+                        // fix later
+                        throw new MembershipServerException(Code.UNKNOWN_FAILURE, keeperException);
+                    }
+                } catch (final InterruptedException interruptedException) {
+                    // fix later
+                    throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
+                }
+                break;
+            }
+            case CURATOR: {
+                try {
+                    final String nodeRootPath = "/" + namespace + "/nodes";
+                    final CuratorWatcher nodeChangedWatcher = new CuratorWatcher() {
+                        @Override
+                        public void process(final WatchedEvent watchedEvent) {
+                            logger.info("Node changed, {}", watchedEvent);
+                            if (watchedEvent.getType() != EventType.None) {
+                                switch (watchedEvent.getType()) {
+                                    case NodeCreated: {
+                                        logger.info("Node added, sessionId:{}, {}", getServerSessionId(),
+                                                watchedEvent.getPath());
+                                        break;
+                                    }
+                                    case NodeDeleted: {
+                                        logger.info("Node left or died, sessionId:{}, {}", getServerSessionId(),
+                                                watchedEvent.getPath());
+                                        break;
+                                    }
+                                    case NodeDataChanged: {
+                                        logger.info("Node data changed, sessionId:{}, {}", getServerSessionId(),
+                                                watchedEvent.getPath());
+                                        break;
+                                    }
+                                    case NodeChildrenChanged: {
+                                        logger.info("Node changed, sessionId:{}, {}", getServerSessionId(),
+                                                watchedEvent.getPath());
+                                        break;
+                                    }
+                                    default: {
+                                        logger.info("Node change triggered, sessionId:{}, {}", getServerSessionId(),
+                                                watchedEvent);
+                                        break;
+                                    }
+                                }
+                                List<Node> updatedNodes = null;
+                                try {
+                                    updatedNodes = listNodes(namespace);
+                                    if (updatedNodes != null) {
+                                        logger.info("Updated nodes:[{}]", updatedNodes);
+                                    }
+                                } catch (final MembershipServerException problem) {
+                                    switch (problem.getCode()) {
+                                        case INVALID_MEMBERSHIP_LCM:
+                                            break;
+                                        default:
+                                            logger.error(String.format("Problem encountered while trying to list nodes for namespace:%s",
+                                                    namespace), problem);
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                    };
+                    serverProxyCurator.getChildren().usingWatcher(nodeChangedWatcher).forPath(nodeRootPath);
+                } catch (final Exception curatorException) {
+                    if (curatorException instanceof MembershipServerException) {
+                        throw MembershipServerException.class.cast(curatorException);
+                    } else {
+                        // fix later
+                        throw new MembershipServerException(Code.UNKNOWN_FAILURE, curatorException);
+                    }
+                }
+                break;
+            }
+        }
     }
 
     // Responsible for replenishing watches that have been triggered and cleared

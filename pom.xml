@@ -15,7 +15,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!--<zookeeper.version>3.4.9</zookeeper.version>-->
     <!--<curator.version>4.2.0</curator.version>-->
-    <zookeeper.version>3.6.0</zookeeper.version>
+    <zookeeper.version>3.6.2</zookeeper.version>
     <curator.version>5.1.0</curator.version>
     <grpc.version>1.33.0</grpc.version>
     <metrics-core.version>3.2.5</metrics-core.version>
