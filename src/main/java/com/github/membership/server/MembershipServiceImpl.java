@@ -164,7 +164,7 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void nodeUpdates(final NodeUpdateRequest request, final StreamObserver<com.github.membership.rpc.NodeUpdate> responseObserver) {
+    public void nodeUpdates(final NodeUpdateRequest request, final StreamObserver<NodeUpdate> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final NodeUpdateCallback nodeUpdateCallback = new NodeUpdateCallback() {

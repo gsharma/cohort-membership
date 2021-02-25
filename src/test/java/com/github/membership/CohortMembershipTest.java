@@ -71,6 +71,7 @@ public final class CohortMembershipTest {
 
     @Test
     public void testLocking() throws Exception {
+        Thread.currentThread().setName(getClass().getSimpleName() + ":testLocking");
         MembershipServer membershipService = null;
         MembershipClient client = null;
         try {
@@ -134,6 +135,7 @@ public final class CohortMembershipTest {
 
     @Test
     public void testBasicJoin() throws Exception {
+        Thread.currentThread().setName(getClass().getSimpleName() + ":testBasicJoin");
         MembershipServer membershipService = null;
         MembershipClient client = null;
         try {
@@ -372,6 +374,7 @@ public final class CohortMembershipTest {
 
     @Test
     public void testNodeDeath() throws Exception {
+        Thread.currentThread().setName(getClass().getSimpleName() + ":testNodeDeath");
         MembershipServer membershipServiceOne = null;
         MembershipServer membershipServiceTwo = null;
         MembershipClient clientOne = null;
@@ -570,6 +573,7 @@ public final class CohortMembershipTest {
 
     @Test
     public void testServiceDeath() throws Exception {
+        Thread.currentThread().setName(getClass().getSimpleName() + ":testServiceDeath");
         MembershipServer membershipServiceOne = null;
         MembershipClient clientOne = null;
         try {
@@ -682,6 +686,7 @@ public final class CohortMembershipTest {
 
     @Test
     public void testMembershipServiceLCM() throws Exception {
+        Thread.currentThread().setName(getClass().getSimpleName() + ":testMembershipServiceLCM");
         for (int iter = 0; iter < 2; iter++) {
             final MembershipServerConfiguration configuration = new MembershipServerConfiguration();
             configuration.setConnectString(zkCluster.getConnectString());
@@ -707,6 +712,7 @@ public final class CohortMembershipTest {
 
     @Test
     public void testMembershipClientLCM() throws Exception {
+        Thread.currentThread().setName(getClass().getSimpleName() + ":testMembershipClientLCM");
         MembershipServer membershipServer = null;
         MembershipClient membershipClient = null;
         try {
