@@ -18,6 +18,7 @@
     <zookeeper.version>3.6.2</zookeeper.version>
     <curator.version>5.1.0</curator.version>
     <grpc.version>1.33.0</grpc.version>
+    <immutables.version>2.8.8</immutables.version>
     <metrics-core.version>3.2.5</metrics-core.version>
     <snappy-java.version>1.1.7</snappy-java.version>
     <guava.version>30.1-jre</guava.version>
@@ -157,7 +158,14 @@
       <version>${guava.version}</version>
     </dependency>
 
-    <!-- 4. annotations -->
+    <!-- 4. immutables -->
+    <dependency>
+      <groupId>org.immutables</groupId>
+      <artifactId>value</artifactId>
+      <version>${immutables.version}</version>
+    </dependency>
+
+    <!-- 5. annotations -->
     <!--
       JDK9 and onwards removed/renamed @generated annotation used by code generation tools
       like grpc, causing build failures. Adding javax.annotation-api dependency as a substitute
@@ -168,7 +176,7 @@
       <version>${javax.annotation.api.version}</version>
     </dependency>
 
-    <!-- 5. junit -->
+    <!-- 6. junit -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -182,7 +190,7 @@
       <scope>test</scope>
     </dependency>
     
-    <!-- 6. logging -->
+    <!-- 7. logging -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
@@ -194,7 +202,7 @@
       <version>${log4j.version}</version>
     </dependency>
 
-    <!-- 7. java object layout -->
+    <!-- 8. java object layout -->
     <!--<dependency>
       <groupId>org.openjdk.jol</groupId>
       <artifactId>jol-core</artifactId>

@@ -28,7 +28,7 @@ appender.rolling.policies.size.size=20MB
 appender.rolling.strategy.type=DefaultRolloverStrategy
 appender.rolling.strategy.max=10
 
-loggers=console
+loggers=console,root
 
 logger.console.name=org.apache.logging.log4j.core.appender.console
 logger.console.level=info

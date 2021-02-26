@@ -1,7 +1,6 @@
 package com.github.membership.server;
 
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 
 import com.github.membership.lib.Lifecycle;
 import com.github.membership.rpc.Cohort;
@@ -9,7 +8,7 @@ import com.github.membership.rpc.CohortType;
 import com.github.membership.rpc.Node;
 import com.github.membership.rpc.NodePersona;
 
-public interface MembershipDelegate extends Lifecycle {
+interface MembershipDelegate extends Lifecycle {
     // reloadable
 
     boolean newNamespace(final String namespace, final byte[] namespaceMetadata) throws MembershipServerException;
@@ -30,6 +29,9 @@ public interface MembershipDelegate extends Lifecycle {
             final String nodeId, final byte[] memberMetadata) throws MembershipServerException;
 
     Cohort describeCohort(final String namespace, final String cohortId, final CohortType cohortType)
+            throws MembershipServerException;
+
+    Cohort updateCohort(final String namespace, final String cohortId, final CohortType cohortType, final byte[] cohortMetadata)
             throws MembershipServerException;
 
     boolean leaveCohort(final String namespace, final String cohortId, final CohortType cohortType,
@@ -53,6 +55,10 @@ public interface MembershipDelegate extends Lifecycle {
             throws MembershipServerException;
 
     void streamNodeChanges(final String namespace, final NodeUpdateCallback nodeUpdateCallback) throws MembershipServerException;
+
+    void streamCohortChanges(final String namespace, final String cohortId, final CohortType cohortType,
+            final CohortUpdateCallback cohortUpdateCallback)
+            throws MembershipServerException;
 
     enum DelegateMode {
         ZK_DIRECT, CURATOR;
