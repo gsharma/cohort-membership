@@ -334,7 +334,7 @@ public final class MembershipClientImpl implements MembershipClient {
     }
 
     @Override
-    public AcquireLockResponse acquireLock(AcquireLockRequest request) throws MembershipClientException {
+    public AcquireLockResponse acquireLock(final AcquireLockRequest request) throws MembershipClientException {
         if (!isRunning()) {
             throw new MembershipClientException(Code.INVALID_MEMBERSHIP_CLIENT_LCM,
                     "Invalid attempt to operate an already stopped membership client");
@@ -349,7 +349,7 @@ public final class MembershipClientImpl implements MembershipClient {
     }
 
     @Override
-    public ReleaseLockResponse releaseLock(ReleaseLockRequest request) throws MembershipClientException {
+    public ReleaseLockResponse releaseLock(final ReleaseLockRequest request) throws MembershipClientException {
         if (!isRunning()) {
             throw new MembershipClientException(Code.INVALID_MEMBERSHIP_CLIENT_LCM,
                     "Invalid attempt to operate an already stopped membership client");
@@ -364,7 +364,7 @@ public final class MembershipClientImpl implements MembershipClient {
     }
 
     @Override
-    public CohortDataUpdateResponse updateCohort(CohortDataUpdateRequest request) throws MembershipClientException {
+    public CohortDataUpdateResponse updateCohort(final CohortDataUpdateRequest request) throws MembershipClientException {
         if (!isRunning()) {
             throw new MembershipClientException(Code.INVALID_MEMBERSHIP_CLIENT_LCM,
                     "Invalid attempt to operate an already stopped membership client");

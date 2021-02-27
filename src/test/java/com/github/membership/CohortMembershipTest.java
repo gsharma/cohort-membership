@@ -3,7 +3,6 @@ package com.github.membership;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -177,8 +176,7 @@ public final class CohortMembershipTest {
                 final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
                         .setNamespace(namespace)
                         .setNodeId(UUID.randomUUID().toString())
-                        .setPersona(NodePersona.COMPUTE)
-                        .setAddress(serverHostOne + ":" + serverPortOne).build();
+                        .build();
                 final NewNodeResponse newNodeResponseOne = client.newNode(newNodeRequestOne);
                 final Node nodeOne = newNodeResponseOne.getNode();
                 assertNotNull(nodeOne);
@@ -190,8 +188,7 @@ public final class CohortMembershipTest {
                 final NewNodeRequest newNodeRequestTwo = NewNodeRequest.newBuilder()
                         .setNamespace(namespace)
                         .setNodeId(UUID.randomUUID().toString())
-                        .setPersona(NodePersona.DATA_COMPUTE)
-                        .setAddress(serverHostTwo + ":" + serverPortTwo).build();
+                        .build();
                 final NewNodeResponse newNodeResponseTwo = client.newNode(newNodeRequestTwo);
                 final Node nodeTwo = newNodeResponseTwo.getNode();
                 assertNotNull(nodeTwo);
@@ -439,8 +436,7 @@ public final class CohortMembershipTest {
                 final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
                         .setNamespace(namespace)
                         .setNodeId(UUID.randomUUID().toString())
-                        .setPersona(NodePersona.COMPUTE)
-                        .setAddress(serverHostOne + ":" + serverPortOne).build();
+                        .build();
                 final NewNodeResponse newNodeResponseOne = clientOne.newNode(newNodeRequestOne);
                 final Node nodeOne = newNodeResponseOne.getNode();
                 assertNotNull(nodeOne);
@@ -452,8 +448,7 @@ public final class CohortMembershipTest {
                 final NewNodeRequest newNodeRequestTwo = NewNodeRequest.newBuilder()
                         .setNamespace(namespace)
                         .setNodeId(UUID.randomUUID().toString())
-                        .setPersona(NodePersona.DATA_COMPUTE)
-                        .setAddress(serverHostTwo + ":" + serverPortTwo).build();
+                        .build();
                 final NewNodeResponse newNodeResponseTwo = clientTwo.newNode(newNodeRequestTwo);
                 final Node nodeTwo = newNodeResponseTwo.getNode();
                 assertNotNull(nodeTwo);
@@ -626,8 +621,7 @@ public final class CohortMembershipTest {
                 final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
                         .setNamespace(namespace)
                         .setNodeId(UUID.randomUUID().toString())
-                        .setPersona(NodePersona.COMPUTE)
-                        .setAddress(serverHostOne + ":" + serverPortOne).build();
+                        .build();
                 final NewNodeResponse newNodeResponseOne = clientOne.newNode(newNodeRequestOne);
                 final Node nodeOne = newNodeResponseOne.getNode();
                 assertNotNull(nodeOne);
@@ -731,7 +725,7 @@ public final class CohortMembershipTest {
                 assertTrue(clientOne.isRunning());
 
                 logger.info("[step-1] create namespace");
-                String namespace = "testNodeDeath";
+                String namespace = "testCohortUpdate";
                 NewNamespaceRequest newNamespaceRequestOne = NewNamespaceRequest.newBuilder()
                         .setNamespace(namespace).build();
                 NewNamespaceResponse newNamespaceResponseOne = clientOne.newNamespace(newNamespaceRequestOne);
@@ -744,8 +738,7 @@ public final class CohortMembershipTest {
                 final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
                         .setNamespace(namespace)
                         .setNodeId(UUID.randomUUID().toString())
-                        .setPersona(NodePersona.COMPUTE)
-                        .setAddress(serverHostOne + ":" + serverPortOne).build();
+                        .build();
                 final NewNodeResponse newNodeResponseOne = clientOne.newNode(newNodeRequestOne);
                 final Node nodeOne = newNodeResponseOne.getNode();
                 assertNotNull(nodeOne);
@@ -775,7 +768,7 @@ public final class CohortMembershipTest {
                 final ListCohortsResponse listCohortsResponseOne = clientOne.listCohorts(listCohortsRequestOne);
                 assertEquals(1, listCohortsResponseOne.getCohortsList().size());
                 assertTrue(listCohortsResponseOne.getCohortsList().contains(cohortOne));
-                assertNull(listCohortsResponseOne.getCohortsList().get(0).getPayload());
+                assertEquals(ByteString.copyFromUtf8(""), listCohortsResponseOne.getCohortsList().get(0).getPayload());
 
                 logger.info("[step-6] update cohortOne");
                 final ByteString cohortPayload = ByteString.copyFromUtf8("payload");

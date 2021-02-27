@@ -75,9 +75,7 @@ message NewCohortResponse {
 message NewNodeRequest {
   string namespace = 1;
   string nodeId = 2;
-  NodePersona persona = 3;
-  string address = 4;
-  bytes payload = 5;
+  bytes payload = 3;
 }
 
 message NewNodeResponse {

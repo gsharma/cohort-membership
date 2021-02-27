@@ -149,9 +149,12 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
         try {
             final String namespace = request.getNamespace();
             final String nodeId = request.getNodeId();
-            // final String address = request.getAddress();
-            final NodePersona persona = request.getPersona();
-            final Node node = membershipDelegate.newNode(namespace, nodeId, persona, null);
+            final ByteString payloadByteString = request.getPayload();
+            byte[] payloadBytes = null;
+            if (payloadByteString != null) {
+                payloadBytes = payloadByteString.toByteArray();
+            }
+            final Node node = membershipDelegate.newNode(namespace, nodeId, payloadBytes);
             final NewNodeResponse response = NewNodeResponse.newBuilder().setNode(node).build();
             logger.debug(response);
             final NodeUpdateCallback nodeUpdateCallback = new NodeUpdateCallback() {

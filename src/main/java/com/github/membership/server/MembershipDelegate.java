@@ -6,7 +6,6 @@ import com.github.membership.lib.Lifecycle;
 import com.github.membership.rpc.Cohort;
 import com.github.membership.rpc.CohortType;
 import com.github.membership.rpc.Node;
-import com.github.membership.rpc.NodePersona;
 
 interface MembershipDelegate extends Lifecycle {
     // reloadable
@@ -18,7 +17,7 @@ interface MembershipDelegate extends Lifecycle {
     Cohort newCohort(final String namespace, final String cohortId, final CohortType cohortType, final byte[] cohortMetadata)
             throws MembershipServerException;
 
-    Node newNode(final String namespace, final String nodeId, final NodePersona persona, final byte[] nodeMetadata)
+    Node newNode(final String namespace, final String nodeId, final byte[] nodeMetadata)
             throws MembershipServerException;
 
     List<Node> listNodes(final String namespace) throws MembershipServerException;
