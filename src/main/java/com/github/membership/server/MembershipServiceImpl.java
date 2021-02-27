@@ -3,7 +3,11 @@ package com.github.membership.server;
 import com.github.membership.rpc.AcquireLockRequest;
 import com.github.membership.rpc.AcquireLockResponse;
 import com.github.membership.rpc.Cohort;
+import com.github.membership.rpc.CohortDataUpdateRequest;
+import com.github.membership.rpc.CohortDataUpdateResponse;
 import com.github.membership.rpc.CohortType;
+import com.github.membership.rpc.CohortUpdate;
+import com.github.membership.rpc.CohortUpdatesRequest;
 import com.github.membership.rpc.DeleteCohortRequest;
 import com.github.membership.rpc.DeleteCohortResponse;
 import com.github.membership.rpc.DeleteCohortTypeRequest;
@@ -20,6 +24,9 @@ import com.github.membership.rpc.ListCohortsRequest;
 import com.github.membership.rpc.ListCohortsResponse;
 import com.github.membership.rpc.ListNodesRequest;
 import com.github.membership.rpc.ListNodesResponse;
+import com.github.membership.rpc.MembershipServiceGrpc.MembershipServiceImplBase;
+import com.github.membership.rpc.MembershipUpdate;
+import com.github.membership.rpc.MembershipUpdatesRequest;
 import com.github.membership.rpc.NewCohortRequest;
 import com.github.membership.rpc.NewCohortResponse;
 import com.github.membership.rpc.NewCohortTypeRequest;
@@ -31,14 +38,12 @@ import com.github.membership.rpc.NewNodeResponse;
 import com.github.membership.rpc.Node;
 import com.github.membership.rpc.NodePersona;
 import com.github.membership.rpc.NodeUpdate;
-import com.github.membership.rpc.NodeUpdateRequest;
+import com.github.membership.rpc.NodeUpdatesRequest;
 import com.github.membership.rpc.PurgeNamespaceRequest;
 import com.github.membership.rpc.PurgeNamespaceResponse;
 import com.github.membership.rpc.ReleaseLockRequest;
 import com.github.membership.rpc.ReleaseLockResponse;
-import com.github.membership.rpc.MembershipServiceGrpc.MembershipServiceImplBase;
-import com.github.membership.rpc.MembershipUpdate;
-import com.github.membership.rpc.MembershipUpdateRequest;
+import com.google.protobuf.ByteString;
 
 import java.util.List;
 
@@ -120,7 +125,7 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void membershipUpdates(final MembershipUpdateRequest request, final StreamObserver<MembershipUpdate> responseObserver) {
+    public void membershipUpdates(final MembershipUpdatesRequest request, final StreamObserver<MembershipUpdate> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
@@ -164,7 +169,7 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void nodeUpdates(final NodeUpdateRequest request, final StreamObserver<NodeUpdate> responseObserver) {
+    public void nodeUpdates(final NodeUpdatesRequest request, final StreamObserver<NodeUpdate> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final NodeUpdateCallback nodeUpdateCallback = new NodeUpdateCallback() {
@@ -360,8 +365,52 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
         }
     }
 
+    @Override
+    public void cohortUpdates(final CohortUpdatesRequest request,
+            final StreamObserver<CohortUpdate> responseObserver) {
+        try {
+            final String namespace = request.getNamespace();
+            final String cohortId = request.getCohortId();
+            final CohortType cohortType = request.getCohortType();
+            final CohortUpdateCallback cohortUpdateCallback = new CohortUpdateCallback() {
+                @Override
+                public void accept(final CohortUpdate update) {
+                    logger.info("Cohort update event, type:{} update:[{}]", update.getUpdateType(), update);
+                    responseObserver.onNext(update);
+                }
+            };
+            membershipDelegate.streamCohortChanges(namespace, cohortId, cohortType, cohortUpdateCallback);
+            responseObserver.onCompleted();
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
+        }
+    }
+
+    @Override
+    public void updateCohort(final CohortDataUpdateRequest request,
+            final StreamObserver<CohortDataUpdateResponse> responseObserver) {
+        try {
+            final String namespace = request.getNamespace();
+            final String cohortId = request.getCohortId();
+            final CohortType cohortType = request.getCohortType();
+            final ByteString payloadByteString = request.getPayload();
+            byte[] payload = null;
+            if (payloadByteString != null) {
+                payload = payloadByteString.toByteArray();
+            }
+            final Cohort cohort = membershipDelegate.updateCohort(namespace, cohortId, cohortType, payload);
+            final CohortDataUpdateResponse response = CohortDataUpdateResponse.newBuilder().setCohort(cohort).build();
+            logger.debug(response);
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
+        }
+    }
+
     private static StatusRuntimeException toStatusRuntimeException(final MembershipServerException serverException) {
         return new StatusRuntimeException(Status.fromCode(Code.INTERNAL).withCause(serverException)
                 .withDescription(serverException.getMessage()));
     }
+
 }

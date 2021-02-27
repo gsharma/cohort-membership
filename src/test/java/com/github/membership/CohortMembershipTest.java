@@ -3,6 +3,7 @@ package com.github.membership;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -25,6 +26,8 @@ import com.github.membership.client.MembershipClient;
 import com.github.membership.rpc.AcquireLockRequest;
 import com.github.membership.rpc.AcquireLockResponse;
 import com.github.membership.rpc.Cohort;
+import com.github.membership.rpc.CohortDataUpdateRequest;
+import com.github.membership.rpc.CohortDataUpdateResponse;
 import com.github.membership.rpc.CohortType;
 import com.github.membership.rpc.DeleteCohortRequest;
 import com.github.membership.rpc.DeleteCohortResponse;
@@ -59,6 +62,7 @@ import com.github.membership.rpc.ReleaseLockRequest;
 import com.github.membership.rpc.ReleaseLockResponse;
 import com.github.membership.server.MembershipServer;
 import com.github.membership.server.MembershipServerConfiguration;
+import com.google.protobuf.ByteString;
 
 /**
  * Tests to maintain the sanity of MembershipService.
@@ -685,6 +689,105 @@ public final class CohortMembershipTest {
                 assertTrue(newNamespaceResponseOne.getSuccess());
 
                 logger.info("[step-11] purge namespace");
+                final PurgeNamespaceRequest purgeNamespaceRequestOne = PurgeNamespaceRequest.newBuilder()
+                        .setNamespace(namespace).build();
+                final PurgeNamespaceResponse purgeNamespaceResponseOne = clientOne.purgeNamespace(purgeNamespaceRequestOne);
+                assertTrue(purgeNamespaceResponseOne.getSuccess());
+            } finally {
+                if (clientOne != null && clientOne.isRunning()) {
+                    clientOne.stop();
+                    assertFalse(clientOne.isRunning());
+                }
+                if (membershipServiceOne != null && membershipServiceOne.isRunning()) {
+                    membershipServiceOne.stop();
+                    assertFalse(membershipServiceOne.isRunning());
+                }
+            }
+        } catch (final Exception problem) {
+            logger.error("Problem with testServiceDeath", problem);
+        }
+    }
+
+    @Test
+    public void testCohortUpdate() {
+        try {
+            Thread.currentThread().setName(getClass().getSimpleName() + ":testCohortUpdate");
+            MembershipServer membershipServiceOne = null;
+            MembershipClient clientOne = null;
+            try {
+                final MembershipServerConfiguration serviceConfigOne = new MembershipServerConfiguration();
+                serviceConfigOne.setConnectString(zkCluster.getConnectString());
+                serviceConfigOne.setServerHost("localhost");
+                serviceConfigOne.setServerPort(4001);
+                serviceConfigOne.setWorkerCount(2);
+                serviceConfigOne.setClientSessionTimeoutMillis(60 * 1000);
+                serviceConfigOne.setClientSessionEstablishmentTimeoutSeconds(5L);
+                membershipServiceOne = new MembershipServer(serviceConfigOne);
+                membershipServiceOne.start();
+                assertTrue(membershipServiceOne.isRunning());
+
+                clientOne = MembershipClient.getClient("localhost", 4001, 3L, 1);
+                clientOne.start();
+                assertTrue(clientOne.isRunning());
+
+                logger.info("[step-1] create namespace");
+                String namespace = "testNodeDeath";
+                NewNamespaceRequest newNamespaceRequestOne = NewNamespaceRequest.newBuilder()
+                        .setNamespace(namespace).build();
+                NewNamespaceResponse newNamespaceResponseOne = clientOne.newNamespace(newNamespaceRequestOne);
+                // assertEquals("/" + namespace, newNamespaceResponseOne.getPath());
+                assertTrue(newNamespaceResponseOne.getSuccess());
+
+                logger.info("[step-2] create nodeOne");
+                final String serverHostOne = "localhost";
+                final int serverPortOne = 8000;
+                final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
+                        .setNamespace(namespace)
+                        .setNodeId(UUID.randomUUID().toString())
+                        .setPersona(NodePersona.COMPUTE)
+                        .setAddress(serverHostOne + ":" + serverPortOne).build();
+                final NewNodeResponse newNodeResponseOne = clientOne.newNode(newNodeRequestOne);
+                final Node nodeOne = newNodeResponseOne.getNode();
+                assertNotNull(nodeOne);
+                assertEquals("/" + namespace + "/nodes/" + nodeOne.getId(), nodeOne.getPath());
+
+                logger.info("[step-3] create cohortTypeOne");
+                final NewCohortTypeRequest newCohortTypeRequestOne = NewCohortTypeRequest.newBuilder()
+                        .setNamespace(namespace)
+                        .setCohortType(CohortType.ONE).build();
+                final NewCohortTypeResponse newCohortTypeResponseOne = clientOne.newCohortType(newCohortTypeRequestOne);
+                assertTrue(newCohortTypeResponseOne.getSuccess());
+
+                logger.info("[step-4] create cohortOne");
+                final NewCohortRequest newCohortRequestOne = NewCohortRequest.newBuilder()
+                        .setNamespace(namespace)
+                        .setCohortId(UUID.randomUUID().toString())
+                        .setCohortType(CohortType.ONE).build();
+                final NewCohortResponse newCohortResponseOne = clientOne.newCohort(newCohortRequestOne);
+                final Cohort cohortOne = newCohortResponseOne.getCohort();
+                assertNotNull(cohortOne);
+                assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/" + cohortOne.getId(),
+                        cohortOne.getPath());
+
+                logger.info("[step-5] list cohorts, check for cohortOne");
+                final ListCohortsRequest listCohortsRequestOne = ListCohortsRequest.newBuilder()
+                        .setNamespace(namespace).build();
+                final ListCohortsResponse listCohortsResponseOne = clientOne.listCohorts(listCohortsRequestOne);
+                assertEquals(1, listCohortsResponseOne.getCohortsList().size());
+                assertTrue(listCohortsResponseOne.getCohortsList().contains(cohortOne));
+                assertNull(listCohortsResponseOne.getCohortsList().get(0).getPayload());
+
+                logger.info("[step-6] update cohortOne");
+                final ByteString cohortPayload = ByteString.copyFromUtf8("payload");
+                final CohortDataUpdateRequest cohortUpdateRequestOne = CohortDataUpdateRequest.newBuilder()
+                        .setNamespace(namespace)
+                        .setCohortId(cohortOne.getId())
+                        .setCohortType(cohortOne.getType())
+                        .setPayload(cohortPayload).build();
+                final CohortDataUpdateResponse cohortUpdateResponseOne = clientOne.updateCohort(cohortUpdateRequestOne);
+                assertEquals(cohortPayload, cohortUpdateResponseOne.getCohort().getPayload());
+
+                logger.info("[step-7] purge namespace");
                 final PurgeNamespaceRequest purgeNamespaceRequestOne = PurgeNamespaceRequest.newBuilder()
                         .setNamespace(namespace).build();
                 final PurgeNamespaceResponse purgeNamespaceResponseOne = clientOne.purgeNamespace(purgeNamespaceRequestOne);

@@ -3,6 +3,8 @@ package com.github.membership.client;
 import com.github.membership.lib.Lifecycle;
 import com.github.membership.rpc.AcquireLockRequest;
 import com.github.membership.rpc.AcquireLockResponse;
+import com.github.membership.rpc.CohortDataUpdateRequest;
+import com.github.membership.rpc.CohortDataUpdateResponse;
 import com.github.membership.rpc.DeleteCohortRequest;
 import com.github.membership.rpc.DeleteCohortResponse;
 import com.github.membership.rpc.DeleteCohortTypeRequest;
@@ -31,6 +33,8 @@ import com.github.membership.rpc.PurgeNamespaceRequest;
 import com.github.membership.rpc.PurgeNamespaceResponse;
 import com.github.membership.rpc.ReleaseLockRequest;
 import com.github.membership.rpc.ReleaseLockResponse;
+
+import io.grpc.stub.StreamObserver;
 
 /**
  * Client interface for the membership service.
@@ -171,6 +175,15 @@ public interface MembershipClient extends Lifecycle {
      * @throws MembershipClientException
      */
     ReleaseLockResponse releaseLock(final ReleaseLockRequest request) throws MembershipClientException;
+
+    /**
+     * Update an existing cohort.
+     * 
+     * @param request
+     * @return
+     * @throws MembershipClientException
+     */
+    CohortDataUpdateResponse updateCohort(final CohortDataUpdateRequest request) throws MembershipClientException;
 
     /**
      * Get a convenient handle to the MembershipClient.

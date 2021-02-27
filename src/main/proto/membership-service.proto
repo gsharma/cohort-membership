@@ -189,7 +189,7 @@ message ReleaseLockResponse {
   bool success = 1;
 }
 
-message MembershipUpdateRequest {
+message MembershipUpdatesRequest {
   string namespace = 1;
   string cohortId = 2;
   CohortType cohortType = 3;
@@ -208,20 +208,26 @@ message MembershipUpdate {
   MembershipUpdateType updateType = 5;
 }
 
-message NodeUpdateRequest {
+message NodeUpdatesRequest {
   string namespace = 1;
+}
+
+enum CohortUpdateType {
+  UPDATED_COHORT = 0;
 }
 
 message CohortUpdate {
   string namespace = 1;
-  Cohort cohort = 2;
+  string cohortId = 2;
+  CohortType cohortType = 3;
+  Cohort cohort = 4;
+  CohortUpdateType updateType = 5;
 }
 
-message CohortUpdateRequest {
+message CohortUpdatesRequest {
   string namespace = 1;
   string cohortId = 2;
   CohortType cohortType = 3;
-  bytes payload = 4;
 }
 
 enum NodeUpdateType {
@@ -233,6 +239,17 @@ message NodeUpdate {
   string namespace = 1;
   repeated Node nodes = 2;
   NodeUpdateType updateType = 3;
+}
+
+message CohortDataUpdateRequest {
+  string namespace = 1;
+  string cohortId = 2;
+  CohortType cohortType = 3;
+  bytes payload = 4;
+}
+
+message CohortDataUpdateResponse {
+  Cohort cohort = 1;
 }
 
 service MembershipService {
@@ -266,10 +283,12 @@ service MembershipService {
 
   rpc releaseLock (ReleaseLockRequest) returns (ReleaseLockResponse);
 
-  rpc membershipUpdates (MembershipUpdateRequest) returns (stream MembershipUpdate);
+  rpc membershipUpdates (MembershipUpdatesRequest) returns (stream MembershipUpdate);
 
-  rpc cohortUpdates (CohortUpdateRequest) returns (stream CohortUpdate);
+  rpc cohortUpdates (CohortUpdatesRequest) returns (stream CohortUpdate);
 
-  rpc nodeUpdates (NodeUpdateRequest) returns (stream NodeUpdate);
+  rpc nodeUpdates (NodeUpdatesRequest) returns (stream NodeUpdate);
+  
+  rpc updateCohort (CohortDataUpdateRequest) returns (CohortDataUpdateResponse);
 }
 

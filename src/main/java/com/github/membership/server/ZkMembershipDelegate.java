@@ -40,6 +40,8 @@ import org.apache.zookeeper.data.Stat;
 import com.github.membership.lib.Lifecycle;
 import com.github.membership.rpc.Cohort;
 import com.github.membership.rpc.CohortType;
+import com.github.membership.rpc.CohortUpdate;
+import com.github.membership.rpc.CohortUpdateType;
 import com.github.membership.rpc.Member;
 import com.github.membership.rpc.MembershipUpdate;
 import com.github.membership.rpc.MembershipUpdateType;
@@ -866,7 +868,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     final List<String> nodeIds = serverProxyCurator.getChildren().storingStatIn(nodeRootStat).forPath(nodeRootPath);
                     logger.debug("node root:{}, stat:{}", nodeRootPath, nodeRootStat);
                     for (final String nodeId : nodeIds) {
-                        final byte[] nodePayload = serverProxyZk.getData(nodeRootPath + "/" + nodeId, false, null);
+                        final byte[] nodePayload = serverProxyCurator.getData().forPath(nodeRootPath + "/" + nodeId);
                         final Node node = Node.newBuilder().setId(nodeId).setPath(nodeRootPath + "/" + nodeId)
                                 .setPayload(toByteString(nodePayload)).build();
                         // TODO
@@ -1413,7 +1415,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     final List<String> memberIds = serverProxyCurator.getChildren().forPath(cohortMembersPath);
                     final List<Member> members = new ArrayList<>();
                     for (final String memberId : memberIds) {
-                        final byte[] memberPayload = serverProxyZk.getData(cohortMembersPath + "/" + memberId, false, null);
+                        final byte[] memberPayload = serverProxyCurator.getData().forPath(cohortMembersPath + "/" + memberId);
                         final Member member = Member.newBuilder().setCohortId(cohortId).setCohortType(cohortType)
                                 .setMemberId(memberId).setPath(cohortMembersPath + "/" + memberId)
                                 .setPayload(toByteString(memberPayload)).build();
@@ -1976,7 +1978,6 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 break;
             }
         }
-
     }
 
     @Override
@@ -2147,15 +2148,224 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     @Override
     public Cohort updateCohort(final String namespace, final String cohortId, final CohortType cohortType, final byte[] cohortMetadata)
             throws MembershipServerException {
+        if (!isRunning()) {
+            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
+                    "Invalid attempt to operate an already stopped membership service");
+        }
         // TODO
-        return null;
+        // if (!request.validate()) {
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
+        // }
+
+        Cohort cohort = null;
+        switch (mode) {
+            case ZK_DIRECT: {
+                try {
+                    // final String namespace = request.getNamespace();
+                    // final String cohortId = request.getCohortId();
+                    // final CohortType cohortType = request.getCohortType();
+                    final String cohortRootPath = "/" + namespace + "/cohorts";
+                    final String cohortIdPath = cohortRootPath + "/" + cohortType + "/" + cohortId;
+                    serverProxyZk.setData(cohortIdPath, cohortMetadata, -1);
+
+                    cohort = describeCohort(namespace, cohortId, cohortType);
+                } catch (final KeeperException keeperException) {
+                    if (keeperException instanceof KeeperException.NodeExistsException) {
+                        // node already exists
+                    } else {
+                        // fix later
+                        throw new MembershipServerException(Code.UNKNOWN_FAILURE, keeperException);
+                    }
+                } catch (final InterruptedException interruptedException) {
+                    // fix later
+                    throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
+                }
+                break;
+            }
+            case CURATOR: {
+                try {
+                    // final String namespace = request.getNamespace();
+                    // final String cohortId = request.getCohortId();
+                    // final CohortType cohortType = request.getCohortType();
+                    final String cohortRootPath = "/" + namespace + "/cohorts";
+                    final String cohortIdPath = cohortRootPath + "/" + cohortType + "/" + cohortId;
+                    serverProxyCurator.setData().forPath(cohortIdPath, cohortMetadata);
+
+                    cohort = describeCohort(namespace, cohortId, cohortType);
+                } catch (final Exception curatorException) {
+                    if (curatorException instanceof MembershipServerException) {
+                        throw MembershipServerException.class.cast(curatorException);
+                    } else {
+                        // fix later
+                        throw new MembershipServerException(Code.UNKNOWN_FAILURE, curatorException);
+                    }
+                }
+                break;
+            }
+        }
+        return cohort;
     }
 
     @Override
     public void streamCohortChanges(final String namespace, final String cohortId, final CohortType cohortType,
             final CohortUpdateCallback cohortUpdateCallback)
             throws MembershipServerException {
-        // TODO
+        if (!isRunning()) {
+            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
+                    "Invalid attempt to operate an already stopped membership service");
+        }
+        final String cohortIdPath = "/" + namespace + "/cohorts/" + cohortType + "/" + cohortId;
+        switch (mode) {
+            case ZK_DIRECT: {
+                try {
+                    final Watcher cohortChangedWatcher = new Watcher() {
+                        @Override
+                        public void process(final WatchedEvent watchedEvent) {
+                            logger.debug("Cohort changed, {}", watchedEvent);
+                            switch (watchedEvent.getType()) {
+                                case NodeCreated: {
+                                    logger.info("Cohort created, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    break;
+                                }
+                                case NodeDeleted: {
+                                    logger.info("Cohort left or died, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                }
+                                case NodeDataChanged: {
+                                    logger.info("Cohort data changed, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                }
+                                case NodeChildrenChanged: {
+                                    logger.info("Cohort changed, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                }
+                                default: {
+                                    logger.info("Cohort change triggered, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent);
+                                    break;
+                                }
+                            }
+                            try {
+                                final Cohort updatedCohort = describeCohort(namespace, cohortId, cohortType);
+                                if (updatedCohort != null) {
+                                    logger.info("Updated cohort:{}", updatedCohort);
+                                    final CohortUpdate update = CohortUpdate.newBuilder().setNamespace(namespace)
+                                            .setUpdateType(CohortUpdateType.UPDATED_COHORT).setCohort(updatedCohort)
+                                            .setCohortId(cohortId).setCohortType(cohortType).build();
+                                    cohortUpdateCallback.accept(update);
+                                } else {
+                                    logger.info("Deleted cohort:{}", cohortId);
+                                    final CohortUpdate update = CohortUpdate.newBuilder().setNamespace(namespace)
+                                            .setUpdateType(CohortUpdateType.UPDATED_COHORT)
+                                            .setCohortId(cohortId).setCohortType(cohortType).build();
+                                    cohortUpdateCallback.accept(update);
+                                }
+                            } catch (final MembershipServerException problem) {
+                                switch (problem.getCode()) {
+                                    case INVALID_MEMBERSHIP_LCM: {
+                                        break;
+                                    }
+                                    default: {
+                                        logger.error(String.format("Problem encountered while trying to describe cohortId:%s",
+                                                cohortId), problem);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    };
+                    serverProxyZk.getData(cohortIdPath, cohortChangedWatcher, null);
+                } catch (final KeeperException keeperException) {
+                    if (keeperException instanceof KeeperException.NodeExistsException) {
+                        // node already exists
+                    } else {
+                        // fix later
+                        throw new MembershipServerException(Code.UNKNOWN_FAILURE, keeperException);
+                    }
+                } catch (final InterruptedException interruptedException) {
+                    // fix later
+                    throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
+                }
+                break;
+            }
+            case CURATOR: {
+                try {
+                    final CuratorWatcher cohortChangedWatcher = new CuratorWatcher() {
+                        @Override
+                        public void process(final WatchedEvent watchedEvent) {
+                            logger.info("Cohort changed, {}", watchedEvent);
+                            switch (watchedEvent.getType()) {
+                                case NodeCreated: {
+                                    logger.info("Cohort created, sessionId:{}, {}", getServerSessionId(), watchedEvent.getPath());
+                                    break;
+                                }
+                                case NodeDeleted: {
+                                    logger.info("Cohort left or died, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                }
+                                case NodeDataChanged: {
+                                    logger.info("Cohort data changed, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                }
+                                case NodeChildrenChanged: {
+                                    logger.info("Cohort changed, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent.getPath());
+                                    break;
+                                }
+                                default: {
+                                    logger.info("Cohort change triggered, sessionId:{}, {}", getServerSessionId(),
+                                            watchedEvent);
+                                    break;
+                                }
+                            }
+                            List<Member> updatedMembers = null;
+                            try {
+                                final Cohort updatedCohort = describeCohort(namespace, cohortId, cohortType);
+                                if (updatedCohort != null) {
+                                    logger.info("Updated cohort:{}", updatedCohort);
+                                    final CohortUpdate update = CohortUpdate.newBuilder().setNamespace(namespace)
+                                            .setUpdateType(CohortUpdateType.UPDATED_COHORT).setCohort(updatedCohort)
+                                            .setCohortId(cohortId).setCohortType(cohortType).build();
+                                    cohortUpdateCallback.accept(update);
+                                } else {
+                                    logger.info("Deleted cohort:{}", cohortId);
+                                    final CohortUpdate update = CohortUpdate.newBuilder().setNamespace(namespace)
+                                            .setUpdateType(CohortUpdateType.UPDATED_COHORT)
+                                            .setCohortId(cohortId).setCohortType(cohortType).build();
+                                    cohortUpdateCallback.accept(update);
+                                }
+                            } catch (final MembershipServerException problem) {
+                                switch (problem.getCode()) {
+                                    case INVALID_MEMBERSHIP_LCM: {
+                                        break;
+                                    }
+                                    default: {
+                                        logger.error(String.format("Problem encountered while trying to describe cohortId:%s",
+                                                cohortId), problem);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    };
+                    serverProxyCurator.getChildren().usingWatcher(cohortChangedWatcher).forPath(cohortIdPath);
+                } catch (final Exception curatorException) {
+                    if (curatorException instanceof MembershipServerException) {
+                        throw MembershipServerException.class.cast(curatorException);
+                    } else {
+                        // fix later
+                        throw new MembershipServerException(Code.UNKNOWN_FAILURE, curatorException);
+                    }
+                }
+                break;
+            }
+        }
     }
 
     // Responsible for replenishing watches that have been triggered and cleared

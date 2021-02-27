@@ -15,6 +15,8 @@ import com.github.membership.client.MembershipClientException.Code;
 
 import com.github.membership.rpc.AcquireLockRequest;
 import com.github.membership.rpc.AcquireLockResponse;
+import com.github.membership.rpc.CohortDataUpdateRequest;
+import com.github.membership.rpc.CohortDataUpdateResponse;
 import com.github.membership.rpc.DeleteCohortRequest;
 import com.github.membership.rpc.DeleteCohortResponse;
 import com.github.membership.rpc.DeleteCohortTypeRequest;
@@ -55,6 +57,9 @@ import io.grpc.MethodDescriptor;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 
+/**
+ * A grpc client implementation for MembershipClient.
+ */
 public final class MembershipClientImpl implements MembershipClient {
     private static final Logger logger = LogManager.getLogger(MembershipClientImpl.class.getSimpleName());
 
@@ -352,6 +357,21 @@ public final class MembershipClientImpl implements MembershipClient {
         ReleaseLockResponse response = null;
         try {
             response = serviceStub.releaseLock(request);
+        } catch (Throwable problem) {
+            toMembershipClientException(problem);
+        }
+        return response;
+    }
+
+    @Override
+    public CohortDataUpdateResponse updateCohort(CohortDataUpdateRequest request) throws MembershipClientException {
+        if (!isRunning()) {
+            throw new MembershipClientException(Code.INVALID_MEMBERSHIP_CLIENT_LCM,
+                    "Invalid attempt to operate an already stopped membership client");
+        }
+        CohortDataUpdateResponse response = null;
+        try {
+            response = serviceStub.updateCohort(request);
         } catch (Throwable problem) {
             toMembershipClientException(problem);
         }
