@@ -47,6 +47,8 @@ final class MembershipServerException extends Exception {
         LOCK_ACQUISITION_FAILURE("Membership service failed to acquire lock on entity"),
         // 7.
         LOCK_RELEASE_FAILURE("Membership service failed to release lock on entity"),
+        // 8.
+        EXPECTED_VERSION_MISMATCH("Membership service observed an expected version mismatch"),
         // n.
         UNKNOWN_FAILURE(
                 "Membership service internal failure. Check exception stacktrace for more details of the failure");

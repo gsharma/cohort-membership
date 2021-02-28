@@ -226,6 +226,22 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
             final String memberId = request.getMemberId();
             final String nodeId = request.getNodeId();
             final Cohort cohort = membershipDelegate.joinCohort(namespace, memberId, cohortId, cohortType, nodeId, null);
+            final CohortUpdateCallback cohortUpdates = new CohortUpdateCallback() {
+                @Override
+                public void accept(final CohortUpdate update) {
+                    // TODO
+                    logger.info("Observed cohort update:\n{}", update);
+                }
+            };
+            membershipDelegate.streamCohortChanges(namespace, cohortId, cohortType, cohortUpdates);
+            final MembershipUpdateCallback membershipUpdates = new MembershipUpdateCallback() {
+                @Override
+                public void accept(final MembershipUpdate update) {
+                    // TODO
+                    logger.info("Observed membership update:\n{}", update);
+                }
+            };
+            membershipDelegate.streamMembershipChanges(namespace, cohortId, cohortType, membershipUpdates);
             final JoinCohortResponse response = JoinCohortResponse.newBuilder().setCohort(cohort).build();
             logger.debug(response);
             responseObserver.onNext(response);
@@ -277,8 +293,8 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
             final CohortType cohortType = request.getCohortType();
-            final int version = request.getVersion();
-            final boolean success = membershipDelegate.deleteCohort(namespace, cohortId, cohortType, version);
+            final int expectedVersion = request.getExpectedVersion();
+            final boolean success = membershipDelegate.deleteCohort(namespace, cohortId, cohortType, expectedVersion);
             final DeleteCohortResponse response = DeleteCohortResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
@@ -309,8 +325,8 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
         try {
             final String namespace = request.getNamespace();
             final String nodeId = request.getNodeId();
-            final int version = request.getVersion();
-            final boolean success = membershipDelegate.deleteNode(namespace, nodeId, version);
+            final int expectedVersion = request.getExpectedVersion();
+            final boolean success = membershipDelegate.deleteNode(namespace, nodeId, expectedVersion);
             final DeleteNodeResponse response = DeleteNodeResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
@@ -402,8 +418,8 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
             if (payloadByteString != null) {
                 payload = payloadByteString.toByteArray();
             }
-            final int version = request.getVersion();
-            final Cohort cohort = membershipDelegate.updateCohort(namespace, cohortId, cohortType, payload, version);
+            final int expectedVersion = request.getExpectedVersion();
+            final Cohort cohort = membershipDelegate.updateCohort(namespace, cohortId, cohortType, payload, expectedVersion);
             final CohortDataUpdateResponse response = CohortDataUpdateResponse.newBuilder().setCohort(cohort).build();
             logger.debug(response);
             responseObserver.onNext(response);

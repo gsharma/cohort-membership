@@ -139,7 +139,7 @@ message DeleteCohortRequest {
   string namespace = 1;
   string cohortId = 2;
   CohortType cohortType = 3;
-  int32 version = 4;
+  int32 expectedVersion = 4;
 }
 
 message DeleteCohortResponse {
@@ -158,7 +158,7 @@ message DeleteCohortTypeResponse {
 message DeleteNodeRequest {
   string namespace = 1;
   string nodeId = 2;
-  int32 version = 3;
+  int32 expectedVersion = 3;
 }
 
 message DeleteNodeResponse {
@@ -249,12 +249,11 @@ message CohortDataUpdateRequest {
   string cohortId = 2;
   CohortType cohortType = 3;
   bytes payload = 4;
-  int32 version = 5;
+  int32 expectedVersion = 5;
 }
 
 message CohortDataUpdateResponse {
   Cohort cohort = 1;
-  int32 version = 2;
 }
 
 service MembershipService {

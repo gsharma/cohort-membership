@@ -1590,7 +1590,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public boolean deleteCohort(final String namespace, final String cohortId, final CohortType cohortType, final int version)
+    public boolean deleteCohort(final String namespace, final String cohortId, final CohortType cohortType, final int expectedVersion)
             throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
@@ -1656,12 +1656,14 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     }
 
                     logger.debug("Deleting cohort {}", cohortPath);
-                    serverProxyCurator.delete().deletingChildrenIfNeeded().withVersion(version).forPath(cohortPath);
+                    serverProxyCurator.delete().deletingChildrenIfNeeded().withVersion(expectedVersion).forPath(cohortPath);
                     success = true;
                     logger.info("Deleted cohort {}", cohortPath);
                 } catch (final Exception curatorException) {
                     if (curatorException instanceof MembershipServerException) {
                         throw MembershipServerException.class.cast(curatorException);
+                    } else if (curatorException instanceof KeeperException.BadVersionException) {
+                        throw new MembershipServerException(Code.EXPECTED_VERSION_MISMATCH, curatorException);
                     } else {
                         // fix later
                         throw new MembershipServerException(Code.UNKNOWN_FAILURE, curatorException);
@@ -1756,7 +1758,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public boolean deleteNode(final String namespace, final String nodeId, final int version) throws MembershipServerException {
+    public boolean deleteNode(final String namespace, final String nodeId, final int expectedVersion)
+            throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -1781,14 +1784,14 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
                     }
 
-                    serverProxyZk.delete(nodePath, version);
+                    serverProxyZk.delete(nodePath, expectedVersion);
                     success = true;
                     logger.info("Deleted node {}", nodePath);
                 } catch (final KeeperException keeperException) {
                     if (keeperException instanceof KeeperException.NodeExistsException) {
                         // TODO: node already exists
                     } else if (keeperException instanceof KeeperException.BadVersionException) {
-                        // TODO: version did not match
+                        throw new MembershipServerException(Code.EXPECTED_VERSION_MISMATCH, keeperException);
                     } else {
                         // fix later
                         throw new MembershipServerException(Code.UNKNOWN_FAILURE, keeperException);
@@ -1810,12 +1813,14 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         logger.warn(warning);
                         throw new MembershipServerException(Code.PARENT_LOCATOR_FAILURE, warning);
                     }
-                    serverProxyCurator.delete().withVersion(version).forPath(nodePath);
+                    serverProxyCurator.delete().withVersion(expectedVersion).forPath(nodePath);
                     success = true;
                     logger.info("Deleted node {}", nodePath);
                 } catch (final Exception curatorException) {
                     if (curatorException instanceof MembershipServerException) {
                         throw MembershipServerException.class.cast(curatorException);
+                    } else if (curatorException instanceof KeeperException.BadVersionException) {
+                        throw new MembershipServerException(Code.EXPECTED_VERSION_MISMATCH, curatorException);
                     } else {
                         // fix later
                         throw new MembershipServerException(Code.UNKNOWN_FAILURE, curatorException);
@@ -2224,8 +2229,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
     @Override
     public Cohort updateCohort(final String namespace, final String cohortId, final CohortType cohortType, final byte[] cohortMetadata,
-            final int version)
-            throws MembershipServerException {
+            final int expectedVersion) throws MembershipServerException {
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
                     "Invalid attempt to operate an already stopped membership service");
@@ -2242,8 +2246,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             case ZK_DIRECT: {
                 try {
                     if (serverProxyZk.exists(cohortIdPath, false) != null) {
-                        final Stat cohortStat = serverProxyZk.setData(cohortIdPath, cohortMetadata, version);
-                        final int cohortDataVersion = cohortStat.getVersion();
+                        serverProxyZk.setData(cohortIdPath, cohortMetadata, expectedVersion);
+                        // final int cohortDataVersion = cohortStat.getVersion();
 
                         cohort = describeCohort(namespace, cohortId, cohortType);
                     } else {
@@ -2253,6 +2257,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 } catch (final KeeperException keeperException) {
                     if (keeperException instanceof KeeperException.NodeExistsException) {
                         // node already exists
+                    } else if (keeperException instanceof KeeperException.BadVersionException) {
+                        throw new MembershipServerException(Code.EXPECTED_VERSION_MISMATCH, keeperException);
                     } else {
                         // fix later
                         throw new MembershipServerException(Code.UNKNOWN_FAILURE, keeperException);
@@ -2266,8 +2272,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             case CURATOR: {
                 try {
                     if (serverProxyCurator.checkExists().forPath(cohortIdPath) != null) {
-                        final Stat cohortStat = serverProxyCurator.setData().withVersion(version).forPath(cohortIdPath, cohortMetadata);
-                        final int cohortDataVersion = cohortStat.getVersion();
+                        serverProxyCurator.setData().withVersion(expectedVersion).forPath(cohortIdPath, cohortMetadata);
+                        // final int cohortDataVersion = cohortStat.getVersion();
 
                         cohort = describeCohort(namespace, cohortId, cohortType);
                     } else {
@@ -2277,6 +2283,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 } catch (final Exception curatorException) {
                     if (curatorException instanceof MembershipServerException) {
                         throw MembershipServerException.class.cast(curatorException);
+                    } else if (curatorException instanceof KeeperException.BadVersionException) {
+                        throw new MembershipServerException(Code.EXPECTED_VERSION_MISMATCH, curatorException);
                     } else {
                         // fix later
                         throw new MembershipServerException(Code.UNKNOWN_FAILURE, curatorException);
@@ -2451,7 +2459,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
     @Override
     public Member updateMember(final String namespace, final String memberId, final String cohortId, final CohortType cohortType,
-            final byte[] memberMetadata, final int version)
+            final byte[] memberMetadata, final int expectedVersion)
             throws MembershipServerException {
         // TODO
         return null;
