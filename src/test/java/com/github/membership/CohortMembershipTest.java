@@ -54,7 +54,6 @@ import com.github.membership.rpc.NewNamespaceResponse;
 import com.github.membership.rpc.NewNodeRequest;
 import com.github.membership.rpc.NewNodeResponse;
 import com.github.membership.rpc.Node;
-import com.github.membership.rpc.NodePersona;
 import com.github.membership.rpc.PurgeNamespaceRequest;
 import com.github.membership.rpc.PurgeNamespaceResponse;
 import com.github.membership.rpc.ReleaseLockRequest;
@@ -171,8 +170,6 @@ public final class CohortMembershipTest {
                 assertTrue(newNamespaceResponseOne.getSuccess());
 
                 logger.info("[step-2] create nodeOne");
-                final String serverHostOne = "localhost";
-                final int serverPortOne = 8000;
                 final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
                         .setNamespace(namespace)
                         .setNodeId(UUID.randomUUID().toString())
@@ -183,8 +180,6 @@ public final class CohortMembershipTest {
                 assertEquals("/" + namespace + "/nodes/" + nodeOne.getId(), nodeOne.getPath());
 
                 logger.info("[step-3] create nodeTwo");
-                final String serverHostTwo = "localhost";
-                final int serverPortTwo = 8001;
                 final NewNodeRequest newNodeRequestTwo = NewNodeRequest.newBuilder()
                         .setNamespace(namespace)
                         .setNodeId(UUID.randomUUID().toString())
@@ -431,8 +426,6 @@ public final class CohortMembershipTest {
                 assertTrue(newNamespaceResponseOne.getSuccess());
 
                 logger.info("[step-2] create nodeOne");
-                final String serverHostOne = "localhost";
-                final int serverPortOne = 8000;
                 final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
                         .setNamespace(namespace)
                         .setNodeId(UUID.randomUUID().toString())
@@ -443,8 +436,6 @@ public final class CohortMembershipTest {
                 assertEquals("/" + namespace + "/nodes/" + nodeOne.getId(), nodeOne.getPath());
 
                 logger.info("[step-3] create nodeTwo");
-                final String serverHostTwo = "localhost";
-                final int serverPortTwo = 8001;
                 final NewNodeRequest newNodeRequestTwo = NewNodeRequest.newBuilder()
                         .setNamespace(namespace)
                         .setNodeId(UUID.randomUUID().toString())
@@ -616,8 +607,6 @@ public final class CohortMembershipTest {
                 assertTrue(newNamespaceResponseOne.getSuccess());
 
                 logger.info("[step-2] create nodeOne");
-                final String serverHostOne = "localhost";
-                final int serverPortOne = 8000;
                 final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
                         .setNamespace(namespace)
                         .setNodeId(UUID.randomUUID().toString())
@@ -733,8 +722,6 @@ public final class CohortMembershipTest {
                 assertTrue(newNamespaceResponseOne.getSuccess());
 
                 logger.info("[step-2] create nodeOne");
-                final String serverHostOne = "localhost";
-                final int serverPortOne = 8000;
                 final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
                         .setNamespace(namespace)
                         .setNodeId(UUID.randomUUID().toString())
@@ -743,6 +730,7 @@ public final class CohortMembershipTest {
                 final Node nodeOne = newNodeResponseOne.getNode();
                 assertNotNull(nodeOne);
                 assertEquals("/" + namespace + "/nodes/" + nodeOne.getId(), nodeOne.getPath());
+                assertEquals(0, nodeOne.getVersion());
 
                 logger.info("[step-3] create cohortTypeOne");
                 final NewCohortTypeRequest newCohortTypeRequestOne = NewCohortTypeRequest.newBuilder()
@@ -761,6 +749,7 @@ public final class CohortMembershipTest {
                 assertNotNull(cohortOne);
                 assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/" + cohortOne.getId(),
                         cohortOne.getPath());
+                assertEquals(0, cohortOne.getVersion());
 
                 logger.info("[step-5] list cohorts, check for cohortOne");
                 final ListCohortsRequest listCohortsRequestOne = ListCohortsRequest.newBuilder()
@@ -769,6 +758,7 @@ public final class CohortMembershipTest {
                 assertEquals(1, listCohortsResponseOne.getCohortsList().size());
                 assertTrue(listCohortsResponseOne.getCohortsList().contains(cohortOne));
                 assertEquals(ByteString.copyFromUtf8(""), listCohortsResponseOne.getCohortsList().get(0).getPayload());
+                assertEquals(0, listCohortsResponseOne.getCohortsList().get(0).getVersion());
 
                 logger.info("[step-6] update cohortOne");
                 final ByteString cohortPayload = ByteString.copyFromUtf8("payload");
@@ -779,6 +769,7 @@ public final class CohortMembershipTest {
                         .setPayload(cohortPayload).build();
                 final CohortDataUpdateResponse cohortUpdateResponseOne = clientOne.updateCohort(cohortUpdateRequestOne);
                 assertEquals(cohortPayload, cohortUpdateResponseOne.getCohort().getPayload());
+                assertEquals(1, cohortUpdateResponseOne.getCohort().getVersion());
 
                 logger.info("[step-7] purge namespace");
                 final PurgeNamespaceRequest purgeNamespaceRequestOne = PurgeNamespaceRequest.newBuilder()
@@ -796,7 +787,7 @@ public final class CohortMembershipTest {
                 }
             }
         } catch (final Exception problem) {
-            logger.error("Problem with testServiceDeath", problem);
+            logger.error("Problem with testCohortUpdate", problem);
         }
     }
 

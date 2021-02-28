@@ -10,6 +10,7 @@ message Cohort {
   string path = 3;
   repeated Member members = 4;
   bytes payload = 5;
+  int32 version = 6;
 }
 
 message Member {
@@ -19,6 +20,7 @@ message Member {
   CohortType cohortType = 4;
   string path = 5;
   bytes payload = 6;
+  int32 version = 7;
 }
 
 message Node {
@@ -27,6 +29,7 @@ message Node {
   NodePersona persona = 3;
   string path = 4;
   bytes payload = 5;
+  int32 version = 6;
 }
 
 enum NodePersona {
@@ -136,6 +139,7 @@ message DeleteCohortRequest {
   string namespace = 1;
   string cohortId = 2;
   CohortType cohortType = 3;
+  int32 version = 4;
 }
 
 message DeleteCohortResponse {
@@ -154,6 +158,7 @@ message DeleteCohortTypeResponse {
 message DeleteNodeRequest {
   string namespace = 1;
   string nodeId = 2;
+  int32 version = 3;
 }
 
 message DeleteNodeResponse {
@@ -244,10 +249,12 @@ message CohortDataUpdateRequest {
   string cohortId = 2;
   CohortType cohortType = 3;
   bytes payload = 4;
+  int32 version = 5;
 }
 
 message CohortDataUpdateResponse {
   Cohort cohort = 1;
+  int32 version = 2;
 }
 
 service MembershipService {

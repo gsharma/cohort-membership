@@ -10,6 +10,8 @@ import com.github.membership.rpc.Node;
 interface MembershipDelegate extends Lifecycle {
     // reloadable
 
+    int ANY_VERSION = -1;
+
     boolean newNamespace(final String namespace, final byte[] namespaceMetadata) throws MembershipServerException;
 
     boolean newCohortType(final String namespace, final CohortType cohortType, final byte[] cohortTypeMetadata) throws MembershipServerException;
@@ -30,18 +32,18 @@ interface MembershipDelegate extends Lifecycle {
     Cohort describeCohort(final String namespace, final String cohortId, final CohortType cohortType)
             throws MembershipServerException;
 
-    Cohort updateCohort(final String namespace, final String cohortId, final CohortType cohortType, final byte[] cohortMetadata)
+    Cohort updateCohort(final String namespace, final String cohortId, final CohortType cohortType, final byte[] cohortMetadata, final int version)
             throws MembershipServerException;
 
     boolean leaveCohort(final String namespace, final String cohortId, final CohortType cohortType,
             final String memberId) throws MembershipServerException;
 
-    boolean deleteCohort(final String namespace, final String cohortId, final CohortType cohortType)
+    boolean deleteCohort(final String namespace, final String cohortId, final CohortType cohortType, final int version)
             throws MembershipServerException;
 
     boolean deleteCohortType(final String namespace, final CohortType cohortType) throws MembershipServerException;
 
-    boolean deleteNode(final String namespace, final String nodeId) throws MembershipServerException;
+    boolean deleteNode(final String namespace, final String nodeId, final int version) throws MembershipServerException;
 
     boolean purgeNamespace(final String namespace) throws MembershipServerException;
 

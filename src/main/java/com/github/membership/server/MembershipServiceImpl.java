@@ -36,7 +36,6 @@ import com.github.membership.rpc.NewNamespaceResponse;
 import com.github.membership.rpc.NewNodeRequest;
 import com.github.membership.rpc.NewNodeResponse;
 import com.github.membership.rpc.Node;
-import com.github.membership.rpc.NodePersona;
 import com.github.membership.rpc.NodeUpdate;
 import com.github.membership.rpc.NodeUpdatesRequest;
 import com.github.membership.rpc.PurgeNamespaceRequest;
@@ -278,7 +277,8 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
             final CohortType cohortType = request.getCohortType();
-            final boolean success = membershipDelegate.deleteCohort(namespace, cohortId, cohortType);
+            final int version = request.getVersion();
+            final boolean success = membershipDelegate.deleteCohort(namespace, cohortId, cohortType, version);
             final DeleteCohortResponse response = DeleteCohortResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
@@ -309,7 +309,8 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
         try {
             final String namespace = request.getNamespace();
             final String nodeId = request.getNodeId();
-            final boolean success = membershipDelegate.deleteNode(namespace, nodeId);
+            final int version = request.getVersion();
+            final boolean success = membershipDelegate.deleteNode(namespace, nodeId, version);
             final DeleteNodeResponse response = DeleteNodeResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
@@ -401,7 +402,8 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
             if (payloadByteString != null) {
                 payload = payloadByteString.toByteArray();
             }
-            final Cohort cohort = membershipDelegate.updateCohort(namespace, cohortId, cohortType, payload);
+            final int version = request.getVersion();
+            final Cohort cohort = membershipDelegate.updateCohort(namespace, cohortId, cohortType, payload, version);
             final CohortDataUpdateResponse response = CohortDataUpdateResponse.newBuilder().setCohort(cohort).build();
             logger.debug(response);
             responseObserver.onNext(response);
