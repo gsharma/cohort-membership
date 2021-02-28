@@ -2449,6 +2449,14 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
     }
 
+    @Override
+    public Member updateMember(final String namespace, final String memberId, final String cohortId, final CohortType cohortType,
+            final byte[] memberMetadata, final int version)
+            throws MembershipServerException {
+        // TODO
+        return null;
+    }
+
     // Responsible for replenishing watches that have been triggered and cleared
     private static final class WatcherReplenisher implements Lifecycle {
         private final AtomicBoolean running;
@@ -2562,4 +2570,5 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         return byteString;
     }
+
 }

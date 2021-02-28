@@ -217,6 +217,7 @@ public final class CohortMembershipTest {
                 assertNotNull(cohortOne);
                 assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/" + cohortOne.getId(),
                         cohortOne.getPath());
+                assertEquals(0, cohortOne.getVersion());
 
                 logger.info("[step-7] create cohortTwo");
                 final NewCohortRequest newCohortRequestTwo = NewCohortRequest.newBuilder()
@@ -228,6 +229,7 @@ public final class CohortMembershipTest {
                 assertNotNull(cohortTwo);
                 assertEquals("/" + namespace + "/cohorts/" + newCohortRequestTwo.getCohortType().name() + "/" + cohortTwo.getId(),
                         cohortTwo.getPath());
+                assertEquals(0, cohortTwo.getVersion());
 
                 logger.info("[step-8] list cohorts, check for cohortOne and cohortTwo");
                 final ListCohortsRequest listCohortsRequestOne = ListCohortsRequest.newBuilder()
@@ -247,9 +249,10 @@ public final class CohortMembershipTest {
                 final String memberOneId = joinCohortRequestOne.getMemberId();
                 final JoinCohortResponse joinCohortResponseOne = client.joinCohort(joinCohortRequestOne);
                 assertEquals(1, joinCohortResponseOne.getCohort().getMembersList().size());
-                // final Member memberOne = joinCohortResponseOne.getMember();
-                // assertNotNull(memberOne);
-                // assertEquals(cohortOne.getPath() + "/members/" + memberOne.getMemberId(), memberOne.getPath());
+                final Member memberOne = joinCohortResponseOne.getCohort().getMembersList().get(0);
+                assertNotNull(memberOne);
+                assertEquals(cohortOne.getPath() + "/members/" + memberOne.getMemberId(), memberOne.getPath());
+                assertEquals(0, memberOne.getVersion());
 
                 logger.info("[step-10] memberTwo joins cohortOne");
                 final JoinCohortRequest joinCohortRequestTwo = JoinCohortRequest.newBuilder()
@@ -279,6 +282,7 @@ public final class CohortMembershipTest {
                 final List<String> memberIds = new ArrayList<>();
                 for (final Member member : members) {
                     memberIds.add(member.getMemberId());
+                    assertEquals(0, member.getVersion());
                 }
                 assertTrue(memberIds.contains(memberOneId));
                 assertTrue(memberIds.contains(memberTwoId));
@@ -482,9 +486,6 @@ public final class CohortMembershipTest {
                 final String memberOneId = joinCohortRequestOne.getMemberId();
                 final JoinCohortResponse joinCohortResponseOne = clientOne.joinCohort(joinCohortRequestOne);
                 assertEquals(1, joinCohortResponseOne.getCohort().getMembersList().size());
-                // final Member memberOne = joinCohortResponseOne.getMember();
-                // assertNotNull(memberOne);
-                // assertEquals(cohortOne.getPath() + "/members/" + memberOne.getMemberId(), memberOne.getPath());
 
                 logger.info("[step-8] memberTwo joins cohortOne");
                 final JoinCohortRequest joinCohortRequestTwo = JoinCohortRequest.newBuilder()

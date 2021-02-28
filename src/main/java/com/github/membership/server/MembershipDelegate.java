@@ -5,6 +5,7 @@ import java.util.List;
 import com.github.membership.lib.Lifecycle;
 import com.github.membership.rpc.Cohort;
 import com.github.membership.rpc.CohortType;
+import com.github.membership.rpc.Member;
 import com.github.membership.rpc.Node;
 
 interface MembershipDelegate extends Lifecycle {
@@ -46,6 +47,9 @@ interface MembershipDelegate extends Lifecycle {
     boolean deleteNode(final String namespace, final String nodeId, final int version) throws MembershipServerException;
 
     boolean purgeNamespace(final String namespace) throws MembershipServerException;
+
+    Member updateMember(final String namespace, final String memberId, final String cohortId, final CohortType cohortType,
+            final byte[] memberMetadata, final int version) throws MembershipServerException;
 
     boolean acquireLock(final String namespace, final String entity, final long waitSeconds) throws MembershipServerException;
 
