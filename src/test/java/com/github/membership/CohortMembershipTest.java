@@ -927,6 +927,7 @@ public final class CohortMembershipTest {
             final InstanceSpec instanceSpec = new InstanceSpec(dataDir, serverPort, -1, -1, true, -1, -1, 2);
             // System.setProperty("zk.servers", "localhost:" + instanceSpec.getPort());
             System.setProperty("zookeeper.serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
+            System.setProperty("zookeeper.admin.enableServer", "false");
             zkServer = new TestingServer(instanceSpec, false);
             zkServer.start();
         } catch (final Exception problem) {
