@@ -29,6 +29,10 @@ DeleteNodeResponse deleteNode(final DeleteNodeRequest request) throws Membership
 
 PurgeNamespaceResponse purgeNamespace(final PurgeNamespaceRequest request) throws MembershipClientException;
 
+AcquireLockResponse acquireLock(final AcquireLockRequest request) throws MembershipClientException;
+
+ReleaseLockResponse releaseLock(final ReleaseLockRequest request) throws MembershipClientException;
+
 static MembershipClient getClient(final String serverHost, final int serverPort, final long serverDeadlineSeconds, final int workerCount);
 ```
 
