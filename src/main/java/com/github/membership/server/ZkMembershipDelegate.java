@@ -1255,7 +1255,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 logger.debug("Creating member {}", memberChildPath);
                 final Stat memberStat = new Stat();
                 memberChildPath = serverProxyZk.create(memberChildPath, memberMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                        CreateMode.EPHEMERAL/* , memberStat */);
+                        CreateMode.EPHEMERAL, memberStat);
                 logger.debug("member:{}, stat:{}", memberChildPath, memberStat);
 
                 final Member.Builder memberBuilder = Member.newBuilder().setMemberId(memberId).setCohortType(cohortType)
@@ -1508,14 +1508,6 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 final String cohortIdPath = cohortRootPath + "/" + cohortType + "/" + cohortId;
 
                 final String cohortMembersPath = cohortIdPath + "/members";
-                if (serverProxyCurator.checkExists().forPath(cohortMembersPath) == null) {
-                    final String warning = "Failed to locate member tree " + cohortMembersPath;
-                    logger.warn(warning);
-                    return cohort;
-                    // throw new
-                    // MembershipServerException(Code.PARENT_LOCATOR_FAILURE,
-                    // warning);
-                }
                 final List<Member> members = new ArrayList<>();
                 if (serverProxyCurator.checkExists().forPath(cohortMembersPath) != null) {
                     final List<String> memberIds = serverProxyCurator.getChildren().forPath(cohortMembersPath);
@@ -1536,19 +1528,21 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                             members.add(member);
                         }
                     }
+                } else {
+                    final String warning = "Failed to locate member tree " + cohortMembersPath;
+                    logger.warn(warning);
+                    return cohort;
                 }
-                if (serverProxyCurator.checkExists().forPath(cohortIdPath) != null) {
-                    final Cohort.Builder cohortBuilder = Cohort.newBuilder().setType(cohortType).addAllMembers(members)
-                            .setId(cohortId).setPath(cohortIdPath);
-                    final Stat cohortStat = new Stat();
-                    final byte[] cohortPayload = serverProxyCurator.getData().storingStatIn(cohortStat)
-                            .forPath(cohortIdPath);
-                    if (cohortPayload != null) {
-                        cohortBuilder.setPayload(toByteString(cohortPayload));
-                    }
-                    cohortBuilder.setVersion(cohortStat.getVersion());
-                    cohort = cohortBuilder.build();
+                final Cohort.Builder cohortBuilder = Cohort.newBuilder().setType(cohortType).addAllMembers(members)
+                        .setId(cohortId).setPath(cohortIdPath);
+                final Stat cohortStat = new Stat();
+                final byte[] cohortPayload = serverProxyCurator.getData().storingStatIn(cohortStat)
+                        .forPath(cohortIdPath);
+                if (cohortPayload != null) {
+                    cohortBuilder.setPayload(toByteString(cohortPayload));
                 }
+                cohortBuilder.setVersion(cohortStat.getVersion());
+                cohort = cohortBuilder.build();
             } catch (final Exception curatorException) {
                 if (curatorException instanceof MembershipServerException) {
                     throw MembershipServerException.class.cast(curatorException);
