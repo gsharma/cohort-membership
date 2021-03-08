@@ -1447,14 +1447,6 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 final String cohortIdPath = cohortRootPath + "/" + cohortType + "/" + cohortId;
 
                 final String cohortMembersPath = cohortIdPath + "/members";
-                if (serverProxyZk.exists(cohortMembersPath, false) == null) {
-                    final String warning = "Failed to locate member tree " + cohortMembersPath;
-                    logger.warn(warning);
-                    return cohort;
-                    // throw new
-                    // MembershipServerException(Code.PARENT_LOCATOR_FAILURE,
-                    // warning);
-                }
                 final List<Member> members = new ArrayList<>();
                 if (serverProxyZk.exists(cohortMembersPath, false) != null) {
                     final List<String> memberIds = serverProxyZk.getChildren(cohortMembersPath, false);
@@ -1474,18 +1466,20 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                             members.add(member);
                         }
                     }
+                } else {
+                    final String warning = "Failed to locate member tree " + cohortMembersPath;
+                    logger.warn(warning);
+                    return cohort;
                 }
-                if (serverProxyZk.exists(cohortIdPath, false) != null) {
-                    final Cohort.Builder cohortBuilder = Cohort.newBuilder().setType(cohortType).addAllMembers(members)
-                            .setId(cohortId).setPath(cohortIdPath);
-                    final Stat cohortStat = new Stat();
-                    final byte[] cohortPayload = serverProxyZk.getData(cohortIdPath, false, cohortStat);
-                    if (cohortPayload != null) {
-                        cohortBuilder.setPayload(toByteString(cohortPayload));
-                    }
-                    cohortBuilder.setVersion(cohortStat.getVersion());
-                    cohort = cohortBuilder.build();
+                final Cohort.Builder cohortBuilder = Cohort.newBuilder().setType(cohortType).addAllMembers(members)
+                        .setId(cohortId).setPath(cohortIdPath);
+                final Stat cohortStat = new Stat();
+                final byte[] cohortPayload = serverProxyZk.getData(cohortIdPath, false, cohortStat);
+                if (cohortPayload != null) {
+                    cohortBuilder.setPayload(toByteString(cohortPayload));
                 }
+                cohortBuilder.setVersion(cohortStat.getVersion());
+                cohort = cohortBuilder.build();
             } catch (final KeeperException keeperException) {
                 if (keeperException instanceof KeeperException.NodeExistsException) {
                     // node already exists
