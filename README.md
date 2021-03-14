@@ -1,5 +1,7 @@
 # Cohort Membership
-A library for maintaining and observing changes to membership metadata for a cohort. This library also provides simple primitives for lease-based distributed locking.
+A library for maintaining and observing changes to membership metadata for a cohort. 
+
+This library also provides simple primitives for lease-based distributed locking.
 
 ## API Reference
 ```java
