@@ -47,6 +47,7 @@ import com.github.membership.rpc.CohortUpdateType;
 import com.github.membership.rpc.Member;
 import com.github.membership.rpc.MembershipUpdate;
 import com.github.membership.rpc.MembershipUpdateType;
+import com.github.membership.rpc.Namespace;
 import com.github.membership.rpc.Node;
 import com.github.membership.rpc.NodeUpdate;
 import com.github.membership.rpc.NodeUpdateType;
@@ -362,8 +363,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public boolean newNamespace(final String namespace, final byte[] namespaceMetadata)
-            throws MembershipServerException {
+    public Namespace newNamespace(final String name, final byte[] namespaceMetadata) throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -374,19 +374,19 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
         // request.toString());
         // }
-        boolean success = false;
+        Namespace namespace = null;
         switch (mode) {
         case ZK_DIRECT: {
             try {
                 // final String namespace = request.getNamespace();
-                String namespacePath = "/" + namespace;
+                String namespacePath = "/" + name;
 
                 // create namespace node
                 if (serverProxyZk.exists(namespacePath, false) == null) {
                     logger.debug("Creating namespace {}", namespacePath);
                     final Stat namespaceStat = new Stat();
                     namespacePath = serverProxyZk.create(namespacePath, namespaceMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                            CreateMode.PERSISTENT/* , namespaceStat */);
+                            CreateMode.PERSISTENT, namespaceStat);
                     logger.debug("namespace:{}, stat:{}", namespacePath, namespaceStat);
                     logger.info("Created namespace:{}, zxid:{}", namespacePath, namespaceStat.getCzxid());
 
@@ -406,8 +406,14 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     logger.debug("nodes root:{}, stat:{}", nodeRootPath, nodeRootStat);
                     logger.info("Created nodes root:{}, zxid:{}", nodeRootPath, nodeRootStat.getCzxid());
 
-                    success = true;
-                    trackedNamespaces.add(namespace);
+                    final Namespace.Builder namespaceBuilder = Namespace.newBuilder().setName(name)
+                            .setVersion(namespaceStat.getVersion());
+                    if (namespaceMetadata != null) {
+                        namespaceBuilder.setPayload(toByteString(namespaceMetadata));
+                    }
+                    namespace = namespaceBuilder.build();
+
+                    trackedNamespaces.add(name);
                 } else {
                     logger.warn("Namespace already exists {}", namespacePath);
                 }
@@ -427,7 +433,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         case CURATOR: {
             try {
                 // final String namespace = request.getNamespace();
-                String namespacePath = "/" + namespace;
+                String namespacePath = "/" + name;
 
                 // create namespace node
                 if (serverProxyCurator.checkExists().forPath(namespacePath) == null) {
@@ -452,8 +458,14 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     logger.debug("nodes root:{}, stat:{}", nodeRootPath, nodeRootStat);
                     logger.info("Created nodes root:{}, zxid:{}", nodeRootPath, nodeRootStat.getCzxid());
 
-                    success = true;
-                    trackedNamespaces.add(namespace);
+                    final Namespace.Builder namespaceBuilder = Namespace.newBuilder().setName(name)
+                            .setVersion(namespaceStat.getVersion());
+                    if (namespaceMetadata != null) {
+                        namespaceBuilder.setPayload(toByteString(namespaceMetadata));
+                    }
+                    namespace = namespaceBuilder.build();
+
+                    trackedNamespaces.add(name);
                 } else {
                     logger.warn("Namespace already exists {}", namespacePath);
                 }
@@ -468,7 +480,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             break;
         }
         }
-        return success;
+        return namespace;
     }
 
     @Override
@@ -561,8 +573,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     logger.debug("Creating cohort type {}", cohortTypePath);
                     final Stat cohortTypeStat = new Stat();
                     cohortTypePath = serverProxyZk.create(cohortTypePath, cohortTypeMetadata,
-                            ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                            CreateMode.PERSISTENT/* , cohortTypeStat */);
+                            ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, cohortTypeStat);
                     success = true;
                     logger.debug("cohort type:{}, stat:{}", cohortTypePath, cohortTypeStat);
                     logger.info("Created cohort type:{}, zxid:{}", cohortTypePath, cohortTypeStat.getCzxid());
@@ -644,7 +655,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     logger.debug("Creating cohort {}", cohortChildPath);
                     final Stat cohortStat = new Stat();
                     cohortChildPath = serverProxyZk.create(cohortChildPath, cohortMetadata, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                            CreateMode.PERSISTENT/* , cohortStat */);
+                            CreateMode.PERSISTENT, cohortStat);
                     logger.debug("cohort:{}, stat:{}", cohortChildPath, cohortStat);
                     logger.info("Created cohort:{}, zxid:{}", cohortChildPath, cohortStat.getCzxid());
 
@@ -658,11 +669,16 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     logger.debug("Creating members root {}", membersChildPath);
                     final Stat membersChildStat = new Stat();
                     membersChildPath = serverProxyZk.create(membersChildPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-                            CreateMode.PERSISTENT/* , membersChildStat */);
+                            CreateMode.PERSISTENT, membersChildStat);
                     logger.debug("members root:{}, stat:{}", membersChildPath, membersChildStat);
                     logger.info("Created members root:{}, zxid:{}", membersChildPath, membersChildStat.getCzxid());
 
-                    cohort = Cohort.newBuilder().setType(cohortType).setId(cohortId).setPath(cohortChildPath).build();
+                    final Cohort.Builder cohortBuilder = Cohort.newBuilder().setType(cohortType).setId(cohortId)
+                            .setPath(cohortChildPath).setVersion(cohortStat.getVersion());
+                    if (cohortMetadata != null) {
+                        cohortBuilder.setPayload(toByteString(cohortMetadata));
+                    }
+                    cohort = cohortBuilder.build();
 
                     // for debugging
                     // if (serverProxy.exists(membersChildPath, false) == null)
@@ -771,7 +787,12 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     logger.debug("members root:{}, stat:{}", membersChildPath, membersChildStat);
                     logger.info("Created members root:{}, zxid:{}", membersChildPath, membersChildStat.getCzxid());
 
-                    cohort = Cohort.newBuilder().setType(cohortType).setId(cohortId).setPath(cohortChildPath).build();
+                    final Cohort.Builder cohortBuilder = Cohort.newBuilder().setType(cohortType).setId(cohortId)
+                            .setPath(cohortChildPath).setVersion(cohortStat.getVersion());
+                    if (cohortMetadata != null) {
+                        cohortBuilder.setPayload(toByteString(cohortMetadata));
+                    }
+                    cohort = cohortBuilder.build();
 
                     // for debugging
                     // if (serverProxy.exists(membersChildPath, false) == null)

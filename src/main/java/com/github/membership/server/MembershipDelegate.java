@@ -6,6 +6,7 @@ import com.github.membership.lib.Lifecycle;
 import com.github.membership.rpc.Cohort;
 import com.github.membership.rpc.CohortType;
 import com.github.membership.rpc.Member;
+import com.github.membership.rpc.Namespace;
 import com.github.membership.rpc.Node;
 
 interface MembershipDelegate extends Lifecycle {
@@ -13,7 +14,7 @@ interface MembershipDelegate extends Lifecycle {
 
     int ANY_VERSION = -1;
 
-    boolean newNamespace(final String namespace, final byte[] namespaceMetadata) throws MembershipServerException;
+    Namespace newNamespace(final String name, final byte[] namespaceMetadata) throws MembershipServerException;
 
     boolean newCohortType(final String namespace, final CohortType cohortType, final byte[] cohortTypeMetadata) throws MembershipServerException;
 

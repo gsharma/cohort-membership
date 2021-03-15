@@ -96,20 +96,20 @@ public final class CohortMembershipTest {
                 logger.info("[step-1] acquire lock");
                 final String namespace = "testLocking";
                 final String lockEntity = UUID.randomUUID().toString();
-                final AcquireLockRequest acquireLockRequestOne = AcquireLockRequest.newBuilder()
-                        .setNamespace(namespace).setLockEntity(lockEntity).setWaitSeconds(1L).build();
+                final AcquireLockRequest acquireLockRequestOne = AcquireLockRequest.newBuilder().setNamespace(namespace)
+                        .setLockEntity(lockEntity).setWaitSeconds(1L).build();
                 final AcquireLockResponse acquireLockResponseOne = client.acquireLock(acquireLockRequestOne);
                 assertTrue(acquireLockResponseOne.getSuccess());
 
                 logger.info("[step-2] reacquire already-held lock, should fail");
-                final AcquireLockRequest acquireLockRequestTwo = AcquireLockRequest.newBuilder()
-                        .setNamespace(namespace).setLockEntity(lockEntity).setWaitSeconds(1L).build();
+                final AcquireLockRequest acquireLockRequestTwo = AcquireLockRequest.newBuilder().setNamespace(namespace)
+                        .setLockEntity(lockEntity).setWaitSeconds(1L).build();
                 final AcquireLockResponse acquireLockResponseTwo = client.acquireLock(acquireLockRequestTwo);
                 assertFalse(acquireLockResponseTwo.getSuccess());
 
                 logger.info("[step-3] release lock");
-                final ReleaseLockRequest releaseLockRequestOne = ReleaseLockRequest.newBuilder()
-                        .setNamespace(namespace).setLockEntity(lockEntity).build();
+                final ReleaseLockRequest releaseLockRequestOne = ReleaseLockRequest.newBuilder().setNamespace(namespace)
+                        .setLockEntity(lockEntity).build();
                 final ReleaseLockResponse releaseLockResponseOne = client.releaseLock(releaseLockRequestOne);
                 assertTrue(releaseLockResponseOne.getSuccess());
 
@@ -120,8 +120,8 @@ public final class CohortMembershipTest {
                 assertTrue(acquireLockResponseThree.getSuccess());
 
                 logger.info("[step-5] release lock");
-                final ReleaseLockRequest releaseLockRequestTwo = ReleaseLockRequest.newBuilder()
-                        .setNamespace(namespace).setLockEntity(lockEntity).build();
+                final ReleaseLockRequest releaseLockRequestTwo = ReleaseLockRequest.newBuilder().setNamespace(namespace)
+                        .setLockEntity(lockEntity).build();
                 final ReleaseLockResponse releaseLockResponseTwo = client.releaseLock(releaseLockRequestTwo);
                 assertTrue(releaseLockResponseTwo.getSuccess());
             } finally {
@@ -166,85 +166,89 @@ public final class CohortMembershipTest {
                 final NewNamespaceRequest newNamespaceRequestOne = NewNamespaceRequest.newBuilder()
                         .setNamespace(namespace).build();
                 final NewNamespaceResponse newNamespaceResponseOne = client.newNamespace(newNamespaceRequestOne);
-                // assertEquals("/" + namespace, newNamespaceResponseOne.getPath());
-                assertTrue(newNamespaceResponseOne.getSuccess());
+                assertNotNull(newNamespaceResponseOne.getNamespace());
+                assertEquals(namespace, newNamespaceResponseOne.getNamespace().getName());
+                assertEquals(0, newNamespaceResponseOne.getNamespace().getVersion());
+                assertEquals(0, newNamespaceResponseOne.getNamespace().getCohortsList().size());
+                assertTrue(newNamespaceResponseOne.getNamespace().getPayload().isEmpty());
 
                 logger.info("[step-2] create nodeOne");
-                final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setNodeId(UUID.randomUUID().toString())
-                        .build();
+                final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder().setNamespace(namespace)
+                        .setNodeId(UUID.randomUUID().toString()).build();
                 final NewNodeResponse newNodeResponseOne = client.newNode(newNodeRequestOne);
                 final Node nodeOne = newNodeResponseOne.getNode();
                 assertNotNull(nodeOne);
                 assertEquals("/" + namespace + "/nodes/" + nodeOne.getId(), nodeOne.getPath());
+                assertEquals(0, nodeOne.getVersion());
+                assertTrue(nodeOne.getPayload().isEmpty());
 
                 logger.info("[step-3] create nodeTwo");
-                final NewNodeRequest newNodeRequestTwo = NewNodeRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setNodeId(UUID.randomUUID().toString())
-                        .build();
+                final NewNodeRequest newNodeRequestTwo = NewNodeRequest.newBuilder().setNamespace(namespace)
+                        .setNodeId(UUID.randomUUID().toString()).build();
                 final NewNodeResponse newNodeResponseTwo = client.newNode(newNodeRequestTwo);
                 final Node nodeTwo = newNodeResponseTwo.getNode();
                 assertNotNull(nodeTwo);
                 assertEquals("/" + namespace + "/nodes/" + nodeTwo.getId(), nodeTwo.getPath());
+                assertEquals(0, nodeTwo.getVersion());
+                assertTrue(nodeTwo.getPayload().isEmpty());
 
                 logger.info("[step-4] create cohortTypeOne");
                 final NewCohortTypeRequest newCohortTypeRequestOne = NewCohortTypeRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortType(CohortType.ONE).build();
+                        .setNamespace(namespace).setCohortType(CohortType.ONE).build();
                 final NewCohortTypeResponse newCohortTypeResponseOne = client.newCohortType(newCohortTypeRequestOne);
                 assertTrue(newCohortTypeResponseOne.getSuccess());
-                // assertEquals(CohortType.ONE, newCohortTypeResponseOne.getCohortType());
-                // assertEquals("/" + namespace + "/cohorts/" + newCohortTypeRequestOne.getCohortType().name(), newCohortTypeResponseOne.getPath());
+                // assertEquals(CohortType.ONE,
+                // newCohortTypeResponseOne.getCohortType());
+                // assertEquals("/" + namespace + "/cohorts/" +
+                // newCohortTypeRequestOne.getCohortType().name(),
+                // newCohortTypeResponseOne.getPath());
 
                 logger.info("[step-5] create cohortTypeTwo");
                 final NewCohortTypeRequest newCohortTypeRequestTwo = NewCohortTypeRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortType(CohortType.TWO).build();
+                        .setNamespace(namespace).setCohortType(CohortType.TWO).build();
                 final NewCohortTypeResponse newCohortTypeResponseTwo = client.newCohortType(newCohortTypeRequestTwo);
                 assertTrue(newCohortTypeResponseTwo.getSuccess());
-                // assertEquals(CohortType.TWO, newCohortTypeResponseTwo.getCohortType());
-                // assertEquals("/" + namespace + "/cohorts/" + newCohortTypeRequestTwo.getCohortType().name(), newCohortTypeResponseTwo.getPath());
+                // assertEquals(CohortType.TWO,
+                // newCohortTypeResponseTwo.getCohortType());
+                // assertEquals("/" + namespace + "/cohorts/" +
+                // newCohortTypeRequestTwo.getCohortType().name(),
+                // newCohortTypeResponseTwo.getPath());
 
                 logger.info("[step-6] create cohortOne");
-                final NewCohortRequest newCohortRequestOne = NewCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(UUID.randomUUID().toString())
-                        .setCohortType(CohortType.ONE).build();
+                final NewCohortRequest newCohortRequestOne = NewCohortRequest.newBuilder().setNamespace(namespace)
+                        .setCohortId(UUID.randomUUID().toString()).setCohortType(CohortType.ONE).build();
                 final NewCohortResponse newCohortResponseOne = client.newCohort(newCohortRequestOne);
                 final Cohort cohortOne = newCohortResponseOne.getCohort();
                 assertNotNull(cohortOne);
-                assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/" + cohortOne.getId(),
-                        cohortOne.getPath());
+                assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/"
+                        + cohortOne.getId(), cohortOne.getPath());
                 assertEquals(0, cohortOne.getVersion());
+                assertEquals(0, cohortOne.getMembersList().size());
+                assertTrue(cohortOne.getPayload().isEmpty());
 
                 logger.info("[step-7] create cohortTwo");
-                final NewCohortRequest newCohortRequestTwo = NewCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(UUID.randomUUID().toString())
-                        .setCohortType(CohortType.TWO).build();
+                final NewCohortRequest newCohortRequestTwo = NewCohortRequest.newBuilder().setNamespace(namespace)
+                        .setCohortId(UUID.randomUUID().toString()).setCohortType(CohortType.TWO).build();
                 final NewCohortResponse newCohortResponseTwo = client.newCohort(newCohortRequestTwo);
                 final Cohort cohortTwo = newCohortResponseTwo.getCohort();
                 assertNotNull(cohortTwo);
-                assertEquals("/" + namespace + "/cohorts/" + newCohortRequestTwo.getCohortType().name() + "/" + cohortTwo.getId(),
-                        cohortTwo.getPath());
+                assertEquals("/" + namespace + "/cohorts/" + newCohortRequestTwo.getCohortType().name() + "/"
+                        + cohortTwo.getId(), cohortTwo.getPath());
                 assertEquals(0, cohortTwo.getVersion());
+                assertEquals(0, cohortTwo.getMembersList().size());
+                assertTrue(cohortTwo.getPayload().isEmpty());
 
                 logger.info("[step-8] list cohorts, check for cohortOne and cohortTwo");
-                final ListCohortsRequest listCohortsRequestOne = ListCohortsRequest.newBuilder()
-                        .setNamespace(namespace).build();
+                final ListCohortsRequest listCohortsRequestOne = ListCohortsRequest.newBuilder().setNamespace(namespace)
+                        .build();
                 final ListCohortsResponse listCohortsResponseOne = client.listCohorts(listCohortsRequestOne);
                 assertEquals(2, listCohortsResponseOne.getCohortsList().size());
                 assertTrue(listCohortsResponseOne.getCohortsList().contains(cohortOne));
                 assertTrue(listCohortsResponseOne.getCohortsList().contains(cohortTwo));
 
                 logger.info("[step-9] memberOne joins cohortOne");
-                final JoinCohortRequest joinCohortRequestOne = JoinCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortOne.getId())
-                        .setCohortType(cohortOne.getType())
-                        .setNodeId(nodeOne.getId())
+                final JoinCohortRequest joinCohortRequestOne = JoinCohortRequest.newBuilder().setNamespace(namespace)
+                        .setCohortId(cohortOne.getId()).setCohortType(cohortOne.getType()).setNodeId(nodeOne.getId())
                         .setMemberId(UUID.randomUUID().toString()).build();
                 final String memberOneId = joinCohortRequestOne.getMemberId();
                 final JoinCohortResponse joinCohortResponseOne = client.joinCohort(joinCohortRequestOne);
@@ -255,25 +259,23 @@ public final class CohortMembershipTest {
                 assertEquals(0, memberOne.getVersion());
 
                 logger.info("[step-10] memberTwo joins cohortOne");
-                final JoinCohortRequest joinCohortRequestTwo = JoinCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortOne.getId())
-                        .setCohortType(cohortOne.getType())
-                        .setNodeId(nodeTwo.getId())
+                final JoinCohortRequest joinCohortRequestTwo = JoinCohortRequest.newBuilder().setNamespace(namespace)
+                        .setCohortId(cohortOne.getId()).setCohortType(cohortOne.getType()).setNodeId(nodeTwo.getId())
                         .setMemberId(UUID.randomUUID().toString()).build();
                 final String memberTwoId = joinCohortRequestTwo.getMemberId();
                 final JoinCohortResponse joinCohortResponseTwo = client.joinCohort(joinCohortRequestTwo);
                 assertEquals(2, joinCohortResponseTwo.getCohort().getMembersList().size());
                 // final Member memberTwo = joinCohortResponseTwo.getMember();
                 // assertNotNull(memberTwo);
-                // assertEquals(cohortOne.getPath() + "/members/" + memberTwo.getMemberId(), memberTwo.getPath());
+                // assertEquals(cohortOne.getPath() + "/members/" +
+                // memberTwo.getMemberId(), memberTwo.getPath());
 
                 logger.info("[step-11] describe cohortOne, check for memberOne and memberTwo");
                 final DescribeCohortRequest describeCohortRequestOne = DescribeCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortOne.getId())
-                        .setCohortType(cohortOne.getType()).build();
-                final DescribeCohortResponse describeCohortResponseOne = client.describeCohort(describeCohortRequestOne);
+                        .setNamespace(namespace).setCohortId(cohortOne.getId()).setCohortType(cohortOne.getType())
+                        .build();
+                final DescribeCohortResponse describeCohortResponseOne = client
+                        .describeCohort(describeCohortRequestOne);
                 final Cohort describedCohortOne = describeCohortResponseOne.getCohort();
                 assertEquals(cohortOne.getId(), describedCohortOne.getId());
                 assertEquals(cohortOne.getType(), describedCohortOne.getType());
@@ -289,10 +291,10 @@ public final class CohortMembershipTest {
 
                 logger.info("[step-12] describe cohortTwo, should have no members");
                 final DescribeCohortRequest describeCohortRequestTwo = DescribeCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortTwo.getId())
-                        .setCohortType(cohortTwo.getType()).build();
-                final DescribeCohortResponse describeCohortResponseTwo = client.describeCohort(describeCohortRequestTwo);
+                        .setNamespace(namespace).setCohortId(cohortTwo.getId()).setCohortType(cohortTwo.getType())
+                        .build();
+                final DescribeCohortResponse describeCohortResponseTwo = client
+                        .describeCohort(describeCohortRequestTwo);
                 final Cohort describedCohortTwo = describeCohortResponseTwo.getCohort();
                 assertEquals(cohortTwo.getId(), describedCohortTwo.getId());
                 assertEquals(cohortTwo.getType(), describedCohortTwo.getType());
@@ -300,20 +302,18 @@ public final class CohortMembershipTest {
                 assertEquals(0, members.size());
 
                 logger.info("[step-13] memberTwo leaves cohortOne");
-                final LeaveCohortRequest leaveCohortRequestOne = LeaveCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortOne.getId())
-                        .setCohortType(cohortOne.getType())
-                        .setMemberId(memberTwoId).build();
+                final LeaveCohortRequest leaveCohortRequestOne = LeaveCohortRequest.newBuilder().setNamespace(namespace)
+                        .setCohortId(cohortOne.getId()).setCohortType(cohortOne.getType()).setMemberId(memberTwoId)
+                        .build();
                 final LeaveCohortResponse leaveCohortResponseOne = client.leaveCohort(leaveCohortRequestOne);
                 assertTrue(leaveCohortResponseOne.getSuccess());
 
                 logger.info("[step-14] describe cohortOne, check for presence of memberOne only");
                 final DescribeCohortRequest describeCohortRequestThree = DescribeCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortOne.getId())
-                        .setCohortType(cohortOne.getType()).build();
-                final DescribeCohortResponse describeCohortResponseThree = client.describeCohort(describeCohortRequestThree);
+                        .setNamespace(namespace).setCohortId(cohortOne.getId()).setCohortType(cohortOne.getType())
+                        .build();
+                final DescribeCohortResponse describeCohortResponseThree = client
+                        .describeCohort(describeCohortRequestThree);
                 final Cohort describedCohortThree = describeCohortResponseThree.getCohort();
                 assertEquals(cohortOne.getId(), describedCohortThree.getId());
                 assertEquals(cohortOne.getType(), describedCohortThree.getType());
@@ -323,40 +323,39 @@ public final class CohortMembershipTest {
 
                 logger.info("[step-15] delete cohortTwo");
                 final DeleteCohortRequest deleteCohortRequestOne = DeleteCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortTwo.getId())
-                        .setCohortType(cohortTwo.getType()).build();
+                        .setNamespace(namespace).setCohortId(cohortTwo.getId()).setCohortType(cohortTwo.getType())
+                        .build();
                 final DeleteCohortResponse deleteCohortResponseOne = client.deleteCohort(deleteCohortRequestOne);
-                // assertEquals(cohortTwo.getId(), deleteCohortResponseOne.getCohortId());
+                // assertEquals(cohortTwo.getId(),
+                // deleteCohortResponseOne.getCohortId());
                 assertTrue(deleteCohortResponseOne.getSuccess());
 
                 logger.info("[step-16] delete cohortOne");
                 final DeleteCohortRequest deleteCohortRequestTwo = DeleteCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortOne.getId())
-                        .setCohortType(cohortOne.getType()).build();
+                        .setNamespace(namespace).setCohortId(cohortOne.getId()).setCohortType(cohortOne.getType())
+                        .build();
                 final DeleteCohortResponse deleteCohortResponseTwo = client.deleteCohort(deleteCohortRequestTwo);
-                // assertEquals(cohortOne.getId(), deleteCohortResponseTwo.getCohortId());
+                // assertEquals(cohortOne.getId(),
+                // deleteCohortResponseTwo.getCohortId());
                 assertTrue(deleteCohortResponseTwo.getSuccess());
 
                 logger.info("[step-17] delete cohortTypeOne");
                 final DeleteCohortTypeRequest deleteCohortTypeRequestOne = DeleteCohortTypeRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortType(cohortOne.getType()).build();
-                final DeleteCohortTypeResponse deleteCohortTypeResponseOne = client.deleteCohortType(deleteCohortTypeRequestOne);
-                // assertEquals(cohortOne.getType(), deleteCohortTypeResponseOne.getCohortType());
+                        .setNamespace(namespace).setCohortType(cohortOne.getType()).build();
+                final DeleteCohortTypeResponse deleteCohortTypeResponseOne = client
+                        .deleteCohortType(deleteCohortTypeRequestOne);
+                // assertEquals(cohortOne.getType(),
+                // deleteCohortTypeResponseOne.getCohortType());
                 assertTrue(deleteCohortTypeResponseOne.getSuccess());
 
                 logger.info("[step-18] delete nodeOne");
-                final DeleteNodeRequest deleteNodeRequestOne = DeleteNodeRequest.newBuilder()
-                        .setNamespace(namespace)
+                final DeleteNodeRequest deleteNodeRequestOne = DeleteNodeRequest.newBuilder().setNamespace(namespace)
                         .setNodeId(nodeOne.getId()).build();
                 final DeleteNodeResponse deleteNodeResponseOne = client.deleteNode(deleteNodeRequestOne);
                 assertTrue(deleteNodeResponseOne.getSuccess());
 
                 logger.info("[step-19] delete nodeTwo");
-                final DeleteNodeRequest deleteNodeRequestTwo = DeleteNodeRequest.newBuilder()
-                        .setNamespace(namespace)
+                final DeleteNodeRequest deleteNodeRequestTwo = DeleteNodeRequest.newBuilder().setNamespace(namespace)
                         .setNodeId(nodeTwo.getId()).build();
                 final DeleteNodeResponse deleteNodeResponseTwo = client.deleteNode(deleteNodeRequestTwo);
                 assertTrue(deleteNodeResponseTwo.getSuccess());
@@ -364,8 +363,10 @@ public final class CohortMembershipTest {
                 logger.info("[step-20] purge namespace");
                 final PurgeNamespaceRequest purgeNamespaceRequestOne = PurgeNamespaceRequest.newBuilder()
                         .setNamespace(namespace).build();
-                final PurgeNamespaceResponse purgeNamespaceResponseOne = client.purgeNamespace(purgeNamespaceRequestOne);
-                // assertEquals(namespace, purgeNamespaceResponseOne.getNamespace());
+                final PurgeNamespaceResponse purgeNamespaceResponseOne = client
+                        .purgeNamespace(purgeNamespaceRequestOne);
+                // assertEquals(namespace,
+                // purgeNamespaceResponseOne.getNamespace());
                 assertTrue(purgeNamespaceResponseOne.getSuccess());
             } finally {
                 if (client != null && client.isRunning()) {
@@ -426,24 +427,21 @@ public final class CohortMembershipTest {
                 final NewNamespaceRequest newNamespaceRequestOne = NewNamespaceRequest.newBuilder()
                         .setNamespace(namespace).build();
                 final NewNamespaceResponse newNamespaceResponseOne = clientOne.newNamespace(newNamespaceRequestOne);
-                // assertEquals("/" + namespace, newNamespaceResponseOne.getPath());
-                assertTrue(newNamespaceResponseOne.getSuccess());
+                // assertEquals("/" + namespace,
+                // newNamespaceResponseOne.getPath());
+                assertNotNull(newNamespaceResponseOne.getNamespace());
 
                 logger.info("[step-2] create nodeOne");
-                final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setNodeId(UUID.randomUUID().toString())
-                        .build();
+                final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder().setNamespace(namespace)
+                        .setNodeId(UUID.randomUUID().toString()).build();
                 final NewNodeResponse newNodeResponseOne = clientOne.newNode(newNodeRequestOne);
                 final Node nodeOne = newNodeResponseOne.getNode();
                 assertNotNull(nodeOne);
                 assertEquals("/" + namespace + "/nodes/" + nodeOne.getId(), nodeOne.getPath());
 
                 logger.info("[step-3] create nodeTwo");
-                final NewNodeRequest newNodeRequestTwo = NewNodeRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setNodeId(UUID.randomUUID().toString())
-                        .build();
+                final NewNodeRequest newNodeRequestTwo = NewNodeRequest.newBuilder().setNamespace(namespace)
+                        .setNodeId(UUID.randomUUID().toString()).build();
                 final NewNodeResponse newNodeResponseTwo = clientTwo.newNode(newNodeRequestTwo);
                 final Node nodeTwo = newNodeResponseTwo.getNode();
                 assertNotNull(nodeTwo);
@@ -451,62 +449,57 @@ public final class CohortMembershipTest {
 
                 logger.info("[step-4] create cohortTypeOne");
                 final NewCohortTypeRequest newCohortTypeRequestOne = NewCohortTypeRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortType(CohortType.ONE).build();
+                        .setNamespace(namespace).setCohortType(CohortType.ONE).build();
                 final NewCohortTypeResponse newCohortTypeResponseOne = clientOne.newCohortType(newCohortTypeRequestOne);
                 assertTrue(newCohortTypeResponseOne.getSuccess());
-                // assertEquals(CohortType.ONE, newCohortTypeResponseOne.getCohortType());
-                // assertEquals("/" + namespace + "/cohorts/" + newCohortTypeRequestOne.getCohortType().name(), newCohortTypeResponseOne.getPath());
+                // assertEquals(CohortType.ONE,
+                // newCohortTypeResponseOne.getCohortType());
+                // assertEquals("/" + namespace + "/cohorts/" +
+                // newCohortTypeRequestOne.getCohortType().name(),
+                // newCohortTypeResponseOne.getPath());
 
                 logger.info("[step-5] create cohortOne");
-                final NewCohortRequest newCohortRequestOne = NewCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(UUID.randomUUID().toString())
-                        .setCohortType(CohortType.ONE).build();
+                final NewCohortRequest newCohortRequestOne = NewCohortRequest.newBuilder().setNamespace(namespace)
+                        .setCohortId(UUID.randomUUID().toString()).setCohortType(CohortType.ONE).build();
                 final NewCohortResponse newCohortResponseOne = clientOne.newCohort(newCohortRequestOne);
                 final Cohort cohortOne = newCohortResponseOne.getCohort();
                 assertNotNull(cohortOne);
-                assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/" + cohortOne.getId(),
-                        cohortOne.getPath());
+                assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/"
+                        + cohortOne.getId(), cohortOne.getPath());
 
                 logger.info("[step-6] list cohorts, check for cohortOne");
-                final ListCohortsRequest listCohortsRequestOne = ListCohortsRequest.newBuilder()
-                        .setNamespace(namespace).build();
+                final ListCohortsRequest listCohortsRequestOne = ListCohortsRequest.newBuilder().setNamespace(namespace)
+                        .build();
                 final ListCohortsResponse listCohortsResponseOne = clientOne.listCohorts(listCohortsRequestOne);
                 assertEquals(1, listCohortsResponseOne.getCohortsList().size());
                 assertTrue(listCohortsResponseOne.getCohortsList().contains(cohortOne));
 
                 logger.info("[step-7] memberOne joins cohortOne");
-                final JoinCohortRequest joinCohortRequestOne = JoinCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortOne.getId())
-                        .setCohortType(cohortOne.getType())
-                        .setNodeId(nodeOne.getId())
+                final JoinCohortRequest joinCohortRequestOne = JoinCohortRequest.newBuilder().setNamespace(namespace)
+                        .setCohortId(cohortOne.getId()).setCohortType(cohortOne.getType()).setNodeId(nodeOne.getId())
                         .setMemberId(UUID.randomUUID().toString()).build();
                 final String memberOneId = joinCohortRequestOne.getMemberId();
                 final JoinCohortResponse joinCohortResponseOne = clientOne.joinCohort(joinCohortRequestOne);
                 assertEquals(1, joinCohortResponseOne.getCohort().getMembersList().size());
 
                 logger.info("[step-8] memberTwo joins cohortOne");
-                final JoinCohortRequest joinCohortRequestTwo = JoinCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortOne.getId())
-                        .setCohortType(cohortOne.getType())
-                        .setNodeId(nodeTwo.getId())
+                final JoinCohortRequest joinCohortRequestTwo = JoinCohortRequest.newBuilder().setNamespace(namespace)
+                        .setCohortId(cohortOne.getId()).setCohortType(cohortOne.getType()).setNodeId(nodeTwo.getId())
                         .setMemberId(UUID.randomUUID().toString()).build();
                 final String memberTwoId = joinCohortRequestTwo.getMemberId();
                 final JoinCohortResponse joinCohortResponseTwo = clientTwo.joinCohort(joinCohortRequestTwo);
                 assertEquals(2, joinCohortResponseTwo.getCohort().getMembersList().size());
                 // final Member memberTwo = joinCohortResponseTwo.getMember();
                 // assertNotNull(memberTwo);
-                // assertEquals(cohortOne.getPath() + "/members/" + memberTwo.getMemberId(), memberTwo.getPath());
+                // assertEquals(cohortOne.getPath() + "/members/" +
+                // memberTwo.getMemberId(), memberTwo.getPath());
 
                 logger.info("[step-9] describe cohortOne, check for memberOne and memberTwo");
                 final DescribeCohortRequest describeCohortRequestOne = DescribeCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortOne.getId())
-                        .setCohortType(cohortOne.getType()).build();
-                final DescribeCohortResponse describeCohortResponseOne = clientOne.describeCohort(describeCohortRequestOne);
+                        .setNamespace(namespace).setCohortId(cohortOne.getId()).setCohortType(cohortOne.getType())
+                        .build();
+                final DescribeCohortResponse describeCohortResponseOne = clientOne
+                        .describeCohort(describeCohortRequestOne);
                 final Cohort describedCohortOne = describeCohortResponseOne.getCohort();
                 assertEquals(cohortOne.getId(), describedCohortOne.getId());
                 assertEquals(cohortOne.getType(), describedCohortOne.getType());
@@ -520,8 +513,8 @@ public final class CohortMembershipTest {
                 assertTrue(memberIds.contains(memberTwoId));
 
                 logger.info("[step-10] list nodes, check for nodeOne and nodeTwo");
-                final ListNodesRequest listNodesRequestOne = ListNodesRequest.newBuilder()
-                        .setNamespace(namespace).build();
+                final ListNodesRequest listNodesRequestOne = ListNodesRequest.newBuilder().setNamespace(namespace)
+                        .build();
                 final ListNodesResponse listNodesResponseOne = clientOne.listNodes(listNodesRequestOne);
                 assertEquals(2, listNodesResponseOne.getNodesList().size());
 
@@ -530,10 +523,10 @@ public final class CohortMembershipTest {
 
                 logger.info("[step-12] describe cohortOne, check for presence of memberOne only");
                 final DescribeCohortRequest describeCohortRequestThree = DescribeCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortOne.getId())
-                        .setCohortType(cohortOne.getType()).build();
-                final DescribeCohortResponse describeCohortResponseThree = clientOne.describeCohort(describeCohortRequestThree);
+                        .setNamespace(namespace).setCohortId(cohortOne.getId()).setCohortType(cohortOne.getType())
+                        .build();
+                final DescribeCohortResponse describeCohortResponseThree = clientOne
+                        .describeCohort(describeCohortRequestThree);
                 final Cohort describedCohortTwo = describeCohortResponseThree.getCohort();
                 assertEquals(cohortOne.getId(), describedCohortTwo.getId());
                 assertEquals(cohortOne.getType(), describedCohortTwo.getType());
@@ -542,8 +535,8 @@ public final class CohortMembershipTest {
                 assertEquals(memberOneId, members.get(0).getMemberId());
 
                 logger.info("[step-13] list nodes, check for nodeOne only");
-                final ListNodesRequest listNodesRequestTwo = ListNodesRequest.newBuilder()
-                        .setNamespace(namespace).build();
+                final ListNodesRequest listNodesRequestTwo = ListNodesRequest.newBuilder().setNamespace(namespace)
+                        .build();
                 final ListNodesResponse listNodesResponseTwo = clientOne.listNodes(listNodesRequestTwo);
                 assertEquals(1, listNodesResponseTwo.getNodesList().size());
                 assertTrue(listNodesResponseTwo.getNodesList().get(0).getId().equals(nodeOne.getId()));
@@ -551,8 +544,10 @@ public final class CohortMembershipTest {
                 logger.info("[step-14] purge namespace");
                 final PurgeNamespaceRequest purgeNamespaceRequestOne = PurgeNamespaceRequest.newBuilder()
                         .setNamespace(namespace).build();
-                final PurgeNamespaceResponse purgeNamespaceResponseOne = clientOne.purgeNamespace(purgeNamespaceRequestOne);
-                // assertEquals(namespace, purgeNamespaceResponseOne.getNamespace());
+                final PurgeNamespaceResponse purgeNamespaceResponseOne = clientOne
+                        .purgeNamespace(purgeNamespaceRequestOne);
+                // assertEquals(namespace,
+                // purgeNamespaceResponseOne.getNamespace());
                 assertTrue(purgeNamespaceResponseOne.getSuccess());
             } finally {
                 if (clientOne != null && clientOne.isRunning()) {
@@ -601,17 +596,16 @@ public final class CohortMembershipTest {
 
                 logger.info("[step-1] create namespace");
                 String namespace = "testNodeDeath";
-                NewNamespaceRequest newNamespaceRequestOne = NewNamespaceRequest.newBuilder()
-                        .setNamespace(namespace).build();
+                NewNamespaceRequest newNamespaceRequestOne = NewNamespaceRequest.newBuilder().setNamespace(namespace)
+                        .build();
                 NewNamespaceResponse newNamespaceResponseOne = clientOne.newNamespace(newNamespaceRequestOne);
-                // assertEquals("/" + namespace, newNamespaceResponseOne.getPath());
-                assertTrue(newNamespaceResponseOne.getSuccess());
+                // assertEquals("/" + namespace,
+                // newNamespaceResponseOne.getPath());
+                assertNotNull(newNamespaceResponseOne.getNamespace());
 
                 logger.info("[step-2] create nodeOne");
-                final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setNodeId(UUID.randomUUID().toString())
-                        .build();
+                final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder().setNamespace(namespace)
+                        .setNodeId(UUID.randomUUID().toString()).build();
                 final NewNodeResponse newNodeResponseOne = clientOne.newNode(newNodeRequestOne);
                 final Node nodeOne = newNodeResponseOne.getNode();
                 assertNotNull(nodeOne);
@@ -619,47 +613,43 @@ public final class CohortMembershipTest {
 
                 logger.info("[step-3] create cohortTypeOne");
                 final NewCohortTypeRequest newCohortTypeRequestOne = NewCohortTypeRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortType(CohortType.ONE).build();
+                        .setNamespace(namespace).setCohortType(CohortType.ONE).build();
                 final NewCohortTypeResponse newCohortTypeResponseOne = clientOne.newCohortType(newCohortTypeRequestOne);
                 assertTrue(newCohortTypeResponseOne.getSuccess());
 
                 logger.info("[step-4] create cohortOne");
-                final NewCohortRequest newCohortRequestOne = NewCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(UUID.randomUUID().toString())
-                        .setCohortType(CohortType.ONE).build();
+                final NewCohortRequest newCohortRequestOne = NewCohortRequest.newBuilder().setNamespace(namespace)
+                        .setCohortId(UUID.randomUUID().toString()).setCohortType(CohortType.ONE).build();
                 final NewCohortResponse newCohortResponseOne = clientOne.newCohort(newCohortRequestOne);
                 final Cohort cohortOne = newCohortResponseOne.getCohort();
                 assertNotNull(cohortOne);
-                assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/" + cohortOne.getId(),
-                        cohortOne.getPath());
+                assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/"
+                        + cohortOne.getId(), cohortOne.getPath());
 
                 logger.info("[step-5] list cohorts, check for cohortOne");
-                final ListCohortsRequest listCohortsRequestOne = ListCohortsRequest.newBuilder()
-                        .setNamespace(namespace).build();
+                final ListCohortsRequest listCohortsRequestOne = ListCohortsRequest.newBuilder().setNamespace(namespace)
+                        .build();
                 final ListCohortsResponse listCohortsResponseOne = clientOne.listCohorts(listCohortsRequestOne);
                 assertEquals(1, listCohortsResponseOne.getCohortsList().size());
                 assertTrue(listCohortsResponseOne.getCohortsList().contains(cohortOne));
 
                 logger.info("[step-6] memberOne joins cohortOne");
-                final JoinCohortRequest joinCohortRequestOne = JoinCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortOne.getId())
-                        .setCohortType(cohortOne.getType())
-                        .setNodeId(nodeOne.getId())
+                final JoinCohortRequest joinCohortRequestOne = JoinCohortRequest.newBuilder().setNamespace(namespace)
+                        .setCohortId(cohortOne.getId()).setCohortType(cohortOne.getType()).setNodeId(nodeOne.getId())
                         .setMemberId(UUID.randomUUID().toString()).build();
                 final String memberOneId = joinCohortRequestOne.getMemberId();
                 final JoinCohortResponse joinCohortResponseOne = clientOne.joinCohort(joinCohortRequestOne);
                 assertEquals(1, joinCohortResponseOne.getCohort().getMembersList().size());
 
                 logger.info("[step-7] zk servers all drop dead");
-                // note that this will leave persistent nodes in previous ensemble
+                // note that this will leave persistent nodes in previous
+                // ensemble
                 tiniZkCluster();
 
                 logger.info("[step-8] zk servers all come back to life");
                 initZkCluster();
-                // since our zk ports are dynamic, connectString got updated for new ensemble
+                // since our zk ports are dynamic, connectString got updated for
+                // new ensemble
 
                 logger.info("[step-9] edit membership service config");
                 membershipServiceOne.reloadServerConfig(zkCluster.getConnectString());
@@ -667,15 +657,15 @@ public final class CohortMembershipTest {
 
                 logger.info("[step-10] create namespace");
                 namespace = "testNodeDeath";
-                newNamespaceRequestOne = NewNamespaceRequest.newBuilder()
-                        .setNamespace(namespace).build();
+                newNamespaceRequestOne = NewNamespaceRequest.newBuilder().setNamespace(namespace).build();
                 newNamespaceResponseOne = clientOne.newNamespace(newNamespaceRequestOne);
-                assertTrue(newNamespaceResponseOne.getSuccess());
+                assertNotNull(newNamespaceResponseOne.getNamespace());
 
                 logger.info("[step-11] purge namespace");
                 final PurgeNamespaceRequest purgeNamespaceRequestOne = PurgeNamespaceRequest.newBuilder()
                         .setNamespace(namespace).build();
-                final PurgeNamespaceResponse purgeNamespaceResponseOne = clientOne.purgeNamespace(purgeNamespaceRequestOne);
+                final PurgeNamespaceResponse purgeNamespaceResponseOne = clientOne
+                        .purgeNamespace(purgeNamespaceRequestOne);
                 assertTrue(purgeNamespaceResponseOne.getSuccess());
             } finally {
                 if (clientOne != null && clientOne.isRunning()) {
@@ -716,17 +706,16 @@ public final class CohortMembershipTest {
 
                 logger.info("[step-1] create namespace");
                 String namespace = "testCohortUpdate";
-                NewNamespaceRequest newNamespaceRequestOne = NewNamespaceRequest.newBuilder()
-                        .setNamespace(namespace).build();
+                NewNamespaceRequest newNamespaceRequestOne = NewNamespaceRequest.newBuilder().setNamespace(namespace)
+                        .build();
                 NewNamespaceResponse newNamespaceResponseOne = clientOne.newNamespace(newNamespaceRequestOne);
-                // assertEquals("/" + namespace, newNamespaceResponseOne.getPath());
-                assertTrue(newNamespaceResponseOne.getSuccess());
+                // assertEquals("/" + namespace,
+                // newNamespaceResponseOne.getPath());
+                assertNotNull(newNamespaceResponseOne.getNamespace());
 
                 logger.info("[step-2] create nodeOne");
-                final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setNodeId(UUID.randomUUID().toString())
-                        .build();
+                final NewNodeRequest newNodeRequestOne = NewNodeRequest.newBuilder().setNamespace(namespace)
+                        .setNodeId(UUID.randomUUID().toString()).build();
                 final NewNodeResponse newNodeResponseOne = clientOne.newNode(newNodeRequestOne);
                 final Node nodeOne = newNodeResponseOne.getNode();
                 assertNotNull(nodeOne);
@@ -735,26 +724,23 @@ public final class CohortMembershipTest {
 
                 logger.info("[step-3] create cohortTypeOne");
                 final NewCohortTypeRequest newCohortTypeRequestOne = NewCohortTypeRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortType(CohortType.ONE).build();
+                        .setNamespace(namespace).setCohortType(CohortType.ONE).build();
                 final NewCohortTypeResponse newCohortTypeResponseOne = clientOne.newCohortType(newCohortTypeRequestOne);
                 assertTrue(newCohortTypeResponseOne.getSuccess());
 
                 logger.info("[step-4] create cohortOne");
-                final NewCohortRequest newCohortRequestOne = NewCohortRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(UUID.randomUUID().toString())
-                        .setCohortType(CohortType.ONE).build();
+                final NewCohortRequest newCohortRequestOne = NewCohortRequest.newBuilder().setNamespace(namespace)
+                        .setCohortId(UUID.randomUUID().toString()).setCohortType(CohortType.ONE).build();
                 final NewCohortResponse newCohortResponseOne = clientOne.newCohort(newCohortRequestOne);
                 final Cohort cohortOne = newCohortResponseOne.getCohort();
                 assertNotNull(cohortOne);
-                assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/" + cohortOne.getId(),
-                        cohortOne.getPath());
+                assertEquals("/" + namespace + "/cohorts/" + newCohortRequestOne.getCohortType().name() + "/"
+                        + cohortOne.getId(), cohortOne.getPath());
                 assertEquals(0, cohortOne.getVersion());
 
                 logger.info("[step-5] list cohorts, check for cohortOne");
-                final ListCohortsRequest listCohortsRequestOne = ListCohortsRequest.newBuilder()
-                        .setNamespace(namespace).build();
+                final ListCohortsRequest listCohortsRequestOne = ListCohortsRequest.newBuilder().setNamespace(namespace)
+                        .build();
                 final ListCohortsResponse listCohortsResponseOne = clientOne.listCohorts(listCohortsRequestOne);
                 assertEquals(1, listCohortsResponseOne.getCohortsList().size());
                 assertTrue(listCohortsResponseOne.getCohortsList().contains(cohortOne));
@@ -764,9 +750,7 @@ public final class CohortMembershipTest {
                 logger.info("[step-6] update cohortOne");
                 final ByteString cohortPayload = ByteString.copyFromUtf8("payload");
                 final CohortDataUpdateRequest cohortUpdateRequestOne = CohortDataUpdateRequest.newBuilder()
-                        .setNamespace(namespace)
-                        .setCohortId(cohortOne.getId())
-                        .setCohortType(cohortOne.getType())
+                        .setNamespace(namespace).setCohortId(cohortOne.getId()).setCohortType(cohortOne.getType())
                         .setPayload(cohortPayload).build();
                 final CohortDataUpdateResponse cohortUpdateResponseOne = clientOne.updateCohort(cohortUpdateRequestOne);
                 assertEquals(cohortPayload, cohortUpdateResponseOne.getCohort().getPayload());
@@ -775,7 +759,8 @@ public final class CohortMembershipTest {
                 logger.info("[step-7] purge namespace");
                 final PurgeNamespaceRequest purgeNamespaceRequestOne = PurgeNamespaceRequest.newBuilder()
                         .setNamespace(namespace).build();
-                final PurgeNamespaceResponse purgeNamespaceResponseOne = clientOne.purgeNamespace(purgeNamespaceRequestOne);
+                final PurgeNamespaceResponse purgeNamespaceResponseOne = clientOne
+                        .purgeNamespace(purgeNamespaceRequestOne);
                 assertTrue(purgeNamespaceResponseOne.getSuccess());
             } finally {
                 if (clientOne != null && clientOne.isRunning()) {
@@ -874,16 +859,20 @@ public final class CohortMembershipTest {
                 final String serverHost = "localhost";
                 final int serverPort = 2000 + iter;
                 final File dataDir = new File("target/zkDataDir/" + iter);
-                final InstanceSpec instanceSpec = new InstanceSpec(dataDir, serverPort, -1, -1, true, -1, -1, 2, null, serverHost);
+                final InstanceSpec instanceSpec = new InstanceSpec(dataDir, serverPort, -1, -1, true, -1, -1, 2, null,
+                        serverHost);
                 instanceSpecs.add(instanceSpec);
-                // serverAddresses.add(new InetSocketAddress(serverHost, serverPort));
+                // serverAddresses.add(new InetSocketAddress(serverHost,
+                // serverPort));
             }
 
-            // System.setProperty("zk.servers", "localhost:" + instanceSpec.getPort());
+            // System.setProperty("zk.servers", "localhost:" +
+            // instanceSpec.getPort());
             System.setProperty("zookeeper.serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
 
             // zkCluster = new TestingCluster(instanceSpecs);
-            // for (final TestingZooKeeperServer server : zkCluster.getServers()) {
+            // for (final TestingZooKeeperServer server :
+            // zkCluster.getServers()) {
             // logger.info(server.getInstanceSpec());
             // assertNotNull(server.getQuorumPeer());
             // }
@@ -925,7 +914,8 @@ public final class CohortMembershipTest {
             final int serverPort = 4000;
             final File dataDir = new File("target/zkDataDir");
             final InstanceSpec instanceSpec = new InstanceSpec(dataDir, serverPort, -1, -1, true, -1, -1, 2);
-            // System.setProperty("zk.servers", "localhost:" + instanceSpec.getPort());
+            // System.setProperty("zk.servers", "localhost:" +
+            // instanceSpec.getPort());
             System.setProperty("zookeeper.serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
             System.setProperty("zookeeper.admin.enableServer", "false");
             zkServer = new TestingServer(instanceSpec, false);

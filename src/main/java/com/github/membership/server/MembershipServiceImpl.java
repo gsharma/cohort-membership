@@ -27,6 +27,7 @@ import com.github.membership.rpc.ListNodesResponse;
 import com.github.membership.rpc.MembershipServiceGrpc.MembershipServiceImplBase;
 import com.github.membership.rpc.MembershipUpdate;
 import com.github.membership.rpc.MembershipUpdatesRequest;
+import com.github.membership.rpc.Namespace;
 import com.github.membership.rpc.NewCohortRequest;
 import com.github.membership.rpc.NewCohortResponse;
 import com.github.membership.rpc.NewCohortTypeRequest;
@@ -73,9 +74,9 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
     public void newNamespace(final NewNamespaceRequest request,
             final StreamObserver<NewNamespaceResponse> responseObserver) {
         try {
-            final String namespace = request.getNamespace();
-            final boolean success = membershipDelegate.newNamespace(namespace, null);
-            final NewNamespaceResponse response = NewNamespaceResponse.newBuilder().setSuccess(success).build();
+            final String namespaceName = request.getNamespace();
+            final Namespace namespace = membershipDelegate.newNamespace(namespaceName, null);
+            final NewNamespaceResponse response = NewNamespaceResponse.newBuilder().setNamespace(namespace).build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();

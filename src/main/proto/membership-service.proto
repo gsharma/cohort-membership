@@ -4,6 +4,13 @@ option java_package = "com.github.membership.rpc";
 option java_multiple_files = true;
 package com.github.membership.rpc;
 
+message Namespace {
+  string name = 1;
+  bytes payload = 2;
+  int32 version = 3;
+  repeated Cohort cohorts = 4;
+}
+
 message Cohort {
   string id = 1;
   CohortType type = 2;
@@ -51,7 +58,7 @@ message NewNamespaceRequest {
 }
 
 message NewNamespaceResponse {
-  bool success = 1;
+  Namespace namespace = 1;
 }
 
 message NewCohortTypeRequest {
