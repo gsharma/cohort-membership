@@ -13,6 +13,8 @@ import com.github.membership.rpc.DeleteNodeRequest;
 import com.github.membership.rpc.DeleteNodeResponse;
 import com.github.membership.rpc.DescribeCohortRequest;
 import com.github.membership.rpc.DescribeCohortResponse;
+import com.github.membership.rpc.DescribeNamespaceRequest;
+import com.github.membership.rpc.DescribeNamespaceResponse;
 import com.github.membership.rpc.JoinCohortRequest;
 import com.github.membership.rpc.JoinCohortResponse;
 import com.github.membership.rpc.LeaveCohortRequest;
@@ -33,8 +35,6 @@ import com.github.membership.rpc.PurgeNamespaceRequest;
 import com.github.membership.rpc.PurgeNamespaceResponse;
 import com.github.membership.rpc.ReleaseLockRequest;
 import com.github.membership.rpc.ReleaseLockResponse;
-
-import io.grpc.stub.StreamObserver;
 
 /**
  * Client interface for the membership service.
@@ -184,6 +184,16 @@ public interface MembershipClient extends Lifecycle {
      * @throws MembershipClientException
      */
     CohortDataUpdateResponse updateCohort(final CohortDataUpdateRequest request) throws MembershipClientException;
+
+    /**
+     * Describe an existing namespace.
+     * 
+     * @param request
+     * @return
+     * @throws MembershipClientException
+     */
+    DescribeNamespaceResponse describeNamespace(final DescribeNamespaceRequest request)
+            throws MembershipClientException;
 
     /**
      * Get a convenient handle to the MembershipClient.

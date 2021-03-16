@@ -16,10 +16,10 @@ interface MembershipDelegate extends Lifecycle {
 
     Namespace newNamespace(final String name, final byte[] namespaceMetadata) throws MembershipServerException;
 
-    boolean newCohortType(final String namespace, final CohortType cohortType, final byte[] cohortTypeMetadata) throws MembershipServerException;
+    boolean newCohortType(final String namespace, final CohortType cohortType) throws MembershipServerException;
 
-    Cohort newCohort(final String namespace, final String cohortId, final CohortType cohortType, final byte[] cohortMetadata)
-            throws MembershipServerException;
+    Cohort newCohort(final String namespace, final String cohortId, final CohortType cohortType,
+            final byte[] cohortMetadata) throws MembershipServerException;
 
     Node newNode(final String namespace, final String nodeId, final byte[] nodeMetadata)
             throws MembershipServerException;
@@ -34,37 +34,41 @@ interface MembershipDelegate extends Lifecycle {
     Cohort describeCohort(final String namespace, final String cohortId, final CohortType cohortType)
             throws MembershipServerException;
 
-    Cohort updateCohort(final String namespace, final String cohortId, final CohortType cohortType, final byte[] cohortMetadata,
-            final int expectedVersion) throws MembershipServerException;
+    Cohort updateCohort(final String namespace, final String cohortId, final CohortType cohortType,
+            final byte[] cohortMetadata, final int expectedVersion) throws MembershipServerException;
 
     boolean leaveCohort(final String namespace, final String cohortId, final CohortType cohortType,
             final String memberId) throws MembershipServerException;
 
-    boolean deleteCohort(final String namespace, final String cohortId, final CohortType cohortType, final int expectedVersion)
-            throws MembershipServerException;
+    boolean deleteCohort(final String namespace, final String cohortId, final CohortType cohortType,
+            final int expectedVersion) throws MembershipServerException;
 
     boolean deleteCohortType(final String namespace, final CohortType cohortType) throws MembershipServerException;
 
-    boolean deleteNode(final String namespace, final String nodeId, final int expectedVersion) throws MembershipServerException;
+    boolean deleteNode(final String namespace, final String nodeId, final int expectedVersion)
+            throws MembershipServerException;
 
     boolean purgeNamespace(final String namespace) throws MembershipServerException;
 
-    Member updateMember(final String namespace, final String memberId, final String cohortId, final CohortType cohortType,
-            final byte[] memberMetadata, final int expectedVersion) throws MembershipServerException;
+    Namespace describeNamespace(final String namespace) throws MembershipServerException;
 
-    boolean acquireLock(final String namespace, final String entity, final long waitSeconds) throws MembershipServerException;
+    Member updateMember(final String namespace, final String memberId, final String cohortId,
+            final CohortType cohortType, final byte[] memberMetadata, final int expectedVersion)
+            throws MembershipServerException;
+
+    boolean acquireLock(final String namespace, final String entity, final long waitSeconds)
+            throws MembershipServerException;
 
     boolean releaseLock(final String namespace, final String entity) throws MembershipServerException;
 
     void streamMembershipChanges(final String namespace, final String cohortId, final CohortType cohortType,
-            final MembershipUpdateCallback membershipUpdateCallback)
-            throws MembershipServerException;
+            final MembershipUpdateCallback membershipUpdateCallback) throws MembershipServerException;
 
-    void streamNodeChanges(final String namespace, final NodeUpdateCallback nodeUpdateCallback) throws MembershipServerException;
+    void streamNodeChanges(final String namespace, final NodeUpdateCallback nodeUpdateCallback)
+            throws MembershipServerException;
 
     void streamCohortChanges(final String namespace, final String cohortId, final CohortType cohortType,
-            final CohortUpdateCallback cohortUpdateCallback)
-            throws MembershipServerException;
+            final CohortUpdateCallback cohortUpdateCallback) throws MembershipServerException;
 
     enum DelegateMode {
         ZK_DIRECT, CURATOR;

@@ -25,6 +25,8 @@ import com.github.membership.rpc.DeleteNodeRequest;
 import com.github.membership.rpc.DeleteNodeResponse;
 import com.github.membership.rpc.DescribeCohortRequest;
 import com.github.membership.rpc.DescribeCohortResponse;
+import com.github.membership.rpc.DescribeNamespaceRequest;
+import com.github.membership.rpc.DescribeNamespaceResponse;
 import com.github.membership.rpc.JoinCohortRequest;
 import com.github.membership.rpc.JoinCohortResponse;
 import com.github.membership.rpc.LeaveCohortRequest;
@@ -77,7 +79,8 @@ public final class MembershipClientImpl implements MembershipClient {
     private MembershipServiceGrpc.MembershipServiceBlockingStub serviceStub;
     private ThreadPoolExecutor clientExecutor;
 
-    MembershipClientImpl(final String serverHost, final int serverPort, final long serverDeadlineSeconds, final int workerCount) {
+    MembershipClientImpl(final String serverHost, final int serverPort, final long serverDeadlineSeconds,
+            final int workerCount) {
         this.running = new AtomicBoolean(false);
         this.ready = new AtomicBoolean(false);
         this.serverHost = serverHost;
@@ -101,20 +104,19 @@ public final class MembershipClientImpl implements MembershipClient {
             });
             final ClientInterceptor deadlineInterceptor = new ClientInterceptor() {
                 @Override
-                public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-                        final MethodDescriptor<ReqT, RespT> method, final CallOptions callOptions, final Channel next) {
+                public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(final MethodDescriptor<ReqT, RespT> method,
+                        final CallOptions callOptions, final Channel next) {
                     logger.debug("Intercepted {}", method.getFullMethodName());
                     return next.newCall(method, callOptions.withDeadlineAfter(serverDeadlineSeconds, TimeUnit.SECONDS));
                 }
             };
-            channel = ManagedChannelBuilder.forAddress(serverHost, serverPort).usePlaintext()
-                    .executor(clientExecutor).offloadExecutor(clientExecutor)
-                    .intercept(deadlineInterceptor)
-                    .userAgent("membership-client").build();
+            channel = ManagedChannelBuilder.forAddress(serverHost, serverPort).usePlaintext().executor(clientExecutor)
+                    .offloadExecutor(clientExecutor).intercept(deadlineInterceptor).userAgent("membership-client")
+                    .build();
             serviceStub = MembershipServiceGrpc.newBlockingStub(channel).withWaitForReady();
             ready.set(true);
-            logger.info("Started MembershipClient [{}] connected to {}:{} in {} millis", getIdentity(), serverHost, serverPort,
-                    TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
+            logger.info("Started MembershipClient [{}] connected to {}:{} in {} millis", getIdentity(), serverHost,
+                    serverPort, TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS));
         }
     }
 
@@ -274,7 +276,8 @@ public final class MembershipClientImpl implements MembershipClient {
     }
 
     @Override
-    public DeleteCohortTypeResponse deleteCohortType(final DeleteCohortTypeRequest request) throws MembershipClientException {
+    public DeleteCohortTypeResponse deleteCohortType(final DeleteCohortTypeRequest request)
+            throws MembershipClientException {
         if (!isRunning()) {
             throw new MembershipClientException(Code.INVALID_MEMBERSHIP_CLIENT_LCM,
                     "Invalid attempt to operate an already stopped membership client");
@@ -364,7 +367,8 @@ public final class MembershipClientImpl implements MembershipClient {
     }
 
     @Override
-    public CohortDataUpdateResponse updateCohort(final CohortDataUpdateRequest request) throws MembershipClientException {
+    public CohortDataUpdateResponse updateCohort(final CohortDataUpdateRequest request)
+            throws MembershipClientException {
         if (!isRunning()) {
             throw new MembershipClientException(Code.INVALID_MEMBERSHIP_CLIENT_LCM,
                     "Invalid attempt to operate an already stopped membership client");
@@ -372,6 +376,22 @@ public final class MembershipClientImpl implements MembershipClient {
         CohortDataUpdateResponse response = null;
         try {
             response = serviceStub.updateCohort(request);
+        } catch (Throwable problem) {
+            toMembershipClientException(problem);
+        }
+        return response;
+    }
+
+    @Override
+    public DescribeNamespaceResponse describeNamespace(final DescribeNamespaceRequest request)
+            throws MembershipClientException {
+        if (!isRunning()) {
+            throw new MembershipClientException(Code.INVALID_MEMBERSHIP_CLIENT_LCM,
+                    "Invalid attempt to operate an already stopped membership client");
+        }
+        DescribeNamespaceResponse response = null;
+        try {
+            response = serviceStub.describeNamespace(request);
         } catch (Throwable problem) {
             toMembershipClientException(problem);
         }

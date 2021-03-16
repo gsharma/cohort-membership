@@ -263,6 +263,14 @@ message CohortDataUpdateResponse {
   Cohort cohort = 1;
 }
 
+message DescribeNamespaceRequest {
+  string namespace = 1;
+}
+
+message DescribeNamespaceResponse {
+  Namespace namespace = 1;
+}
+
 service MembershipService {
   rpc newNamespace (NewNamespaceRequest) returns (NewNamespaceResponse);
 
@@ -301,5 +309,7 @@ service MembershipService {
   rpc nodeUpdates (NodeUpdatesRequest) returns (stream NodeUpdate);
   
   rpc updateCohort (CohortDataUpdateRequest) returns (CohortDataUpdateResponse);
+
+  rpc describeNamespace (DescribeNamespaceRequest) returns (DescribeNamespaceResponse);
 }
 

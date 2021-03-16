@@ -16,6 +16,8 @@ import com.github.membership.rpc.DeleteNodeRequest;
 import com.github.membership.rpc.DeleteNodeResponse;
 import com.github.membership.rpc.DescribeCohortRequest;
 import com.github.membership.rpc.DescribeCohortResponse;
+import com.github.membership.rpc.DescribeNamespaceRequest;
+import com.github.membership.rpc.DescribeNamespaceResponse;
 import com.github.membership.rpc.JoinCohortRequest;
 import com.github.membership.rpc.JoinCohortResponse;
 import com.github.membership.rpc.LeaveCohortRequest;
@@ -56,7 +58,8 @@ import io.grpc.Status.Code;
 import io.grpc.stub.StreamObserver;
 
 /**
- * A grpc-based implementation for Membership Service. Note that this is not to be used directly, users should rely on the MembershipClient instead.
+ * A grpc-based implementation for Membership Service. Note that this is not to
+ * be used directly, users should rely on the MembershipClient instead.
  */
 final class MembershipServiceImpl extends MembershipServiceImplBase {
     private static final Logger logger = LogManager.getLogger(MembershipServiceImpl.class.getSimpleName());
@@ -91,7 +94,7 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
         try {
             final String namespace = request.getNamespace();
             final CohortType cohortType = request.getCohortType();
-            final boolean success = membershipDelegate.newCohortType(namespace, cohortType, null);
+            final boolean success = membershipDelegate.newCohortType(namespace, cohortType);
             final NewCohortTypeResponse response = NewCohortTypeResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
             responseObserver.onNext(response);
@@ -125,7 +128,8 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void membershipUpdates(final MembershipUpdatesRequest request, final StreamObserver<MembershipUpdate> responseObserver) {
+    public void membershipUpdates(final MembershipUpdatesRequest request,
+            final StreamObserver<MembershipUpdate> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
@@ -226,7 +230,8 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
             final CohortType cohortType = request.getCohortType();
             final String memberId = request.getMemberId();
             final String nodeId = request.getNodeId();
-            final Cohort cohort = membershipDelegate.joinCohort(namespace, memberId, cohortId, cohortType, nodeId, null);
+            final Cohort cohort = membershipDelegate.joinCohort(namespace, memberId, cohortId, cohortType, nodeId,
+                    null);
             final CohortUpdateCallback cohortUpdates = new CohortUpdateCallback() {
                 @Override
                 public void accept(final CohortUpdate update) {
@@ -359,7 +364,8 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
             final String namespace = request.getNamespace();
             final String lockEntity = request.getLockEntity();
             final long waitSeconds = request.getWaitSeconds();
-            // logger.debug("Acquire lock, namespace:{}, entity:{}, waitSeconds:{}", namespace, lockEntity, waitSeconds);
+            // logger.debug("Acquire lock, namespace:{}, entity:{},
+            // waitSeconds:{}", namespace, lockEntity, waitSeconds);
             final boolean success = membershipDelegate.acquireLock(namespace, lockEntity, waitSeconds);
             final AcquireLockResponse response = AcquireLockResponse.newBuilder().setSuccess(success).build();
             logger.debug(response);
@@ -387,8 +393,7 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
     }
 
     @Override
-    public void cohortUpdates(final CohortUpdatesRequest request,
-            final StreamObserver<CohortUpdate> responseObserver) {
+    public void cohortUpdates(final CohortUpdatesRequest request, final StreamObserver<CohortUpdate> responseObserver) {
         try {
             final String namespace = request.getNamespace();
             final String cohortId = request.getCohortId();
@@ -420,8 +425,25 @@ final class MembershipServiceImpl extends MembershipServiceImplBase {
                 payload = payloadByteString.toByteArray();
             }
             final int expectedVersion = request.getExpectedVersion();
-            final Cohort cohort = membershipDelegate.updateCohort(namespace, cohortId, cohortType, payload, expectedVersion);
+            final Cohort cohort = membershipDelegate.updateCohort(namespace, cohortId, cohortType, payload,
+                    expectedVersion);
             final CohortDataUpdateResponse response = CohortDataUpdateResponse.newBuilder().setCohort(cohort).build();
+            logger.debug(response);
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (MembershipServerException membershipProblem) {
+            responseObserver.onError(toStatusRuntimeException(membershipProblem));
+        }
+    }
+
+    @Override
+    public void describeNamespace(final DescribeNamespaceRequest request,
+            final StreamObserver<DescribeNamespaceResponse> responseObserver) {
+        try {
+            final String namespaceString = request.getNamespace();
+            final Namespace namespace = membershipDelegate.describeNamespace(namespaceString);
+            final DescribeNamespaceResponse response = DescribeNamespaceResponse.newBuilder().setNamespace(namespace)
+                    .build();
             logger.debug(response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();

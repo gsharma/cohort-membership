@@ -20,8 +20,10 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.CuratorWatcher;
+// import org.apache.curator.framework.api.transaction.CuratorMultiTransaction;
 import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+// import org.apache.curator.framework.api.transaction.TransactionOp;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 // import org.apache.curator.framework.recipes.watch.PersistentWatcher;
@@ -548,8 +550,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public boolean newCohortType(final String namespace, final CohortType cohortType, final byte[] cohortTypeMetadata)
-            throws MembershipServerException {
+    public boolean newCohortType(final String namespace, final CohortType cohortType) throws MembershipServerException {
         // logger.debug(request);
         if (!isRunning()) {
             throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
@@ -572,8 +573,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 if (serverProxyZk.exists(cohortTypePath, false) == null) {
                     logger.debug("Creating cohort type {}", cohortTypePath);
                     final Stat cohortTypeStat = new Stat();
-                    cohortTypePath = serverProxyZk.create(cohortTypePath, cohortTypeMetadata,
-                            ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT, cohortTypeStat);
+                    cohortTypePath = serverProxyZk.create(cohortTypePath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+                            CreateMode.PERSISTENT, cohortTypeStat);
                     success = true;
                     logger.debug("cohort type:{}, stat:{}", cohortTypePath, cohortTypeStat);
                     logger.info("Created cohort type:{}, zxid:{}", cohortTypePath, cohortTypeStat.getCzxid());
@@ -603,7 +604,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     logger.debug("Creating cohort type {}", cohortTypePath);
                     final Stat cohortTypeStat = new Stat();
                     cohortTypePath = serverProxyCurator.create().storingStatIn(cohortTypeStat)
-                            .withMode(CreateMode.PERSISTENT).forPath(cohortTypePath, cohortTypeMetadata);
+                            .withMode(CreateMode.PERSISTENT).forPath(cohortTypePath, null);
                     success = true;
                     logger.debug("cohort type:{}, stat:{}", cohortTypePath, cohortTypeStat);
                     logger.info("Created cohort type:{}, zxid:{}", cohortTypePath, cohortTypeStat.getCzxid());
@@ -1521,11 +1522,20 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 // final CohortType cohortType = request.getCohortType();
                 final String cohortRootPath = "/" + namespace + "/cohorts";
                 final String cohortIdPath = cohortRootPath + "/" + cohortType + "/" + cohortId;
-
                 final String cohortMembersPath = cohortIdPath + "/members";
-                final List<Member> members = new ArrayList<>();
-                if (serverProxyCurator.checkExists().forPath(cohortMembersPath) != null) {
-                    final List<String> memberIds = serverProxyCurator.getChildren().forPath(cohortMembersPath);
+
+                if (serverProxyCurator.checkExists().forPath(cohortMembersPath) == null) {
+                    final String warning = "Failed to locate member tree " + cohortMembersPath;
+                    logger.warn(warning);
+                    return cohort;
+                }
+
+                final Cohort.Builder cohortBuilder = Cohort.newBuilder().setType(cohortType).setId(cohortId)
+                        .setPath(cohortIdPath);
+
+                final List<String> memberIds = serverProxyCurator.getChildren().forPath(cohortMembersPath);
+                if (memberIds != null && !memberIds.isEmpty()) {
+                    final List<Member> members = new ArrayList<>(memberIds.size());
                     for (final String memberId : memberIds) {
                         final String memberIdPath = cohortMembersPath + "/" + memberId;
                         if (serverProxyCurator.checkExists().forPath(memberIdPath) != null) {
@@ -1543,13 +1553,9 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                             members.add(member);
                         }
                     }
-                } else {
-                    final String warning = "Failed to locate member tree " + cohortMembersPath;
-                    logger.warn(warning);
-                    return cohort;
+                    cohortBuilder.addAllMembers(members);
                 }
-                final Cohort.Builder cohortBuilder = Cohort.newBuilder().setType(cohortType).addAllMembers(members)
-                        .setId(cohortId).setPath(cohortIdPath);
+
                 final Stat cohortStat = new Stat();
                 final byte[] cohortPayload = serverProxyCurator.getData().storingStatIn(cohortStat)
                         .forPath(cohortIdPath);
@@ -1570,6 +1576,200 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         }
         }
         return cohort;
+    }
+
+    @Override
+    public Namespace describeNamespace(final String name) throws MembershipServerException {
+        // logger.debug(request);
+        if (!isRunning()) {
+            throw new MembershipServerException(Code.INVALID_MEMBERSHIP_LCM,
+                    "Invalid attempt to operate an already stopped membership service");
+        }
+        // TODO
+        // if (!request.validate()) {
+        // throw new MembershipServerException(Code.REQUEST_VALIDATION_FAILURE,
+        // request.toString());
+        // }
+        Namespace namespace = null;
+        switch (mode) {
+        case ZK_DIRECT: {
+            try {
+                String namespacePath = "/" + name;
+                if (serverProxyZk.exists(namespacePath, false) == null) {
+                    return namespace;
+                }
+
+                final Namespace.Builder namespaceBuilder = Namespace.newBuilder();
+                namespaceBuilder.setName(name);
+                final Stat namespaceStat = new Stat();
+                final byte[] namespacePayload = serverProxyZk.getData(namespacePath, false, namespaceStat);
+                if (namespacePayload != null) {
+                    namespaceBuilder.setPayload(toByteString(namespacePayload));
+                }
+                namespaceBuilder.setVersion(namespaceStat.getVersion());
+
+                final String cohortRootPath = "/" + name + "/cohorts";
+                final List<String> cohortTypes = serverProxyZk.getChildren(cohortRootPath, false);
+                if (cohortTypes != null && !cohortTypes.isEmpty()) {
+                    final List<Cohort> cohorts = new ArrayList<>();
+                    for (final String cohortTypeString : cohortTypes) {
+                        final String cohortTypePath = cohortRootPath + "/" + cohortTypeString;
+                        final List<String> cohortIds = serverProxyZk.getChildren(cohortTypePath, false);
+                        if (cohortIds != null && !cohortIds.isEmpty()) {
+                            for (final String cohortId : cohortIds) {
+                                final Cohort.Builder cohortBuilder = Cohort.newBuilder();
+                                cohortBuilder.setId(cohortId);
+
+                                final CohortType cohortType = toCohortType(cohortTypeString);
+                                cohortBuilder.setType(cohortType);
+
+                                final String cohortIdPath = cohortRootPath + "/" + cohortTypeString + "/" + cohortId;
+                                cohortBuilder.setPath(cohortIdPath);
+
+                                final Stat cohortStat = new Stat();
+                                final byte[] cohortPayload = serverProxyZk.getData(cohortIdPath, false, cohortStat);
+                                if (cohortPayload != null) {
+                                    cohortBuilder.setPayload(toByteString(cohortPayload));
+                                }
+                                cohortBuilder.setVersion(cohortStat.getVersion());
+
+                                final String cohortMembersPath = cohortIdPath + "/members";
+                                final List<String> memberIds = serverProxyZk.getChildren(cohortMembersPath, false);
+                                if (memberIds != null && !memberIds.isEmpty()) {
+                                    final List<Member> members = new ArrayList<>(memberIds.size());
+                                    for (final String memberId : memberIds) {
+                                        final String memberIdPath = cohortMembersPath + "/" + memberId;
+                                        if (serverProxyZk.exists(memberIdPath, false) != null) {
+                                            final Member.Builder memberBuilder = Member.newBuilder();
+                                            memberBuilder.setCohortId(cohortId);
+                                            memberBuilder.setCohortType(cohortType);
+                                            memberBuilder.setMemberId(memberId);
+                                            memberBuilder.setPath(memberIdPath);
+                                            // memberBuilder.setNodeId(null);
+                                            final Stat memberStat = new Stat();
+                                            final byte[] memberPayload = serverProxyZk.getData(memberIdPath, false,
+                                                    memberStat);
+                                            if (memberPayload != null) {
+                                                memberBuilder.setPayload(toByteString(memberPayload));
+                                            }
+                                            memberBuilder.setVersion(memberStat.getVersion());
+                                            final Member member = memberBuilder.build();
+                                            members.add(member);
+                                        }
+                                    }
+                                    cohortBuilder.addAllMembers(members);
+                                }
+                                final Cohort cohort = cohortBuilder.build();
+                                cohorts.add(cohort);
+                            }
+                        }
+                    }
+                    namespaceBuilder.addAllCohorts(cohorts);
+                }
+                namespace = namespaceBuilder.build();
+            } catch (final KeeperException keeperException) {
+                if (keeperException instanceof KeeperException.NodeExistsException) {
+                    // node already exists
+                } else {
+                    // fix later
+                    throw new MembershipServerException(Code.UNKNOWN_FAILURE, keeperException);
+                }
+            } catch (final InterruptedException interruptedException) {
+                // fix later
+                throw new MembershipServerException(Code.UNKNOWN_FAILURE, interruptedException);
+            }
+            break;
+        }
+        case CURATOR: {
+            try {
+                String namespacePath = "/" + name;
+                if (serverProxyCurator.checkExists().forPath(namespacePath) == null) {
+                    return namespace;
+                }
+
+                final Namespace.Builder namespaceBuilder = Namespace.newBuilder();
+                namespaceBuilder.setName(name);
+                final Stat namespaceStat = new Stat();
+                final byte[] namespacePayload = serverProxyCurator.getData().storingStatIn(namespaceStat)
+                        .forPath(namespacePath);
+                if (namespacePayload != null) {
+                    namespaceBuilder.setPayload(toByteString(namespacePayload));
+                }
+                namespaceBuilder.setVersion(namespaceStat.getVersion());
+
+                final String cohortRootPath = "/" + name + "/cohorts";
+                final List<String> cohortTypes = serverProxyCurator.getChildren().forPath(cohortRootPath);
+                if (cohortTypes != null && !cohortTypes.isEmpty()) {
+                    final List<Cohort> cohorts = new ArrayList<>();
+                    for (final String cohortTypeString : cohortTypes) {
+                        final String cohortTypePath = cohortRootPath + "/" + cohortTypeString;
+                        final List<String> cohortIds = serverProxyCurator.getChildren().forPath(cohortTypePath);
+                        if (cohortIds != null && !cohortIds.isEmpty()) {
+                            for (final String cohortId : cohortIds) {
+                                final Cohort.Builder cohortBuilder = Cohort.newBuilder();
+                                cohortBuilder.setId(cohortId);
+
+                                final CohortType cohortType = toCohortType(cohortTypeString);
+                                cohortBuilder.setType(cohortType);
+
+                                final String cohortIdPath = cohortRootPath + "/" + cohortTypeString + "/" + cohortId;
+                                cohortBuilder.setPath(cohortIdPath);
+
+                                final Stat cohortStat = new Stat();
+                                final byte[] cohortPayload = serverProxyCurator.getData().storingStatIn(cohortStat)
+                                        .forPath(cohortIdPath);
+                                if (cohortPayload != null) {
+                                    cohortBuilder.setPayload(toByteString(cohortPayload));
+                                }
+                                cohortBuilder.setVersion(cohortStat.getVersion());
+
+                                final String cohortMembersPath = cohortIdPath + "/members";
+                                final List<String> memberIds = serverProxyCurator.getChildren()
+                                        .forPath(cohortMembersPath);
+                                if (memberIds != null && !memberIds.isEmpty()) {
+                                    final List<Member> members = new ArrayList<>(memberIds.size());
+                                    for (final String memberId : memberIds) {
+                                        final String memberIdPath = cohortMembersPath + "/" + memberId;
+                                        if (serverProxyCurator.checkExists().forPath(memberIdPath) != null) {
+                                            final Member.Builder memberBuilder = Member.newBuilder();
+                                            memberBuilder.setCohortId(cohortId);
+                                            memberBuilder.setCohortType(cohortType);
+                                            memberBuilder.setMemberId(memberId);
+                                            memberBuilder.setPath(memberIdPath);
+                                            // memberBuilder.setNodeId(null);
+                                            final Stat memberStat = new Stat();
+                                            final byte[] memberPayload = serverProxyCurator.getData()
+                                                    .storingStatIn(memberStat).forPath(memberIdPath);
+                                            if (memberPayload != null) {
+                                                memberBuilder.setPayload(toByteString(memberPayload));
+                                            }
+                                            memberBuilder.setVersion(memberStat.getVersion());
+                                            final Member member = memberBuilder.build();
+                                            members.add(member);
+                                        }
+                                    }
+                                    cohortBuilder.addAllMembers(members);
+                                }
+                                final Cohort cohort = cohortBuilder.build();
+                                cohorts.add(cohort);
+                            }
+                        }
+                    }
+                    namespaceBuilder.addAllCohorts(cohorts);
+                }
+                namespace = namespaceBuilder.build();
+            } catch (final Exception curatorException) {
+                if (curatorException instanceof MembershipServerException) {
+                    throw MembershipServerException.class.cast(curatorException);
+                } else {
+                    // fix later
+                    throw new MembershipServerException(Code.UNKNOWN_FAILURE, curatorException);
+                }
+            }
+            break;
+        }
+        }
+        return namespace;
     }
 
     @Override
@@ -2701,6 +2901,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
         return found;
     }
 
+    @SuppressWarnings("unused")
     private static byte[] fromByteString(final ByteString byteString) {
         byte[] byteArray = null;
         if (byteString != null) {
@@ -2715,6 +2916,17 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             byteString = ByteString.copyFrom(byteArray);
         }
         return byteString;
+    }
+
+    private static CohortType toCohortType(final String cohortTypeString) {
+        CohortType cohortType = null;
+        for (final CohortType knownType : CohortType.values()) {
+            if (knownType.name().equals(cohortTypeString)) {
+                cohortType = knownType;
+                break;
+            }
+        }
+        return cohortType;
     }
 
 }
