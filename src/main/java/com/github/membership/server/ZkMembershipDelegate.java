@@ -1758,6 +1758,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     namespaceBuilder.addAllCohorts(cohorts);
                 }
                 namespace = namespaceBuilder.build();
+                // logger.info(namespace);
             } catch (final Exception curatorException) {
                 if (curatorException instanceof MembershipServerException) {
                     throw MembershipServerException.class.cast(curatorException);
