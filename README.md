@@ -3,6 +3,13 @@ A library for maintaining and observing changes to membership metadata for a coh
 
 This library also provides simple primitives for lease-based distributed locking.
 
+## Core Constructs
+Namespace
+Node
+Cohort
+Member
+Lock
+
 ## API Reference
 ```java
 NewNamespaceResponse newNamespace(final NewNamespaceRequest request) throws MembershipClientException;
