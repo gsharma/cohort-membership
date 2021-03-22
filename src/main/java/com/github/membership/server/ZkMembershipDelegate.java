@@ -482,6 +482,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             break;
         }
         }
+        logger.debug("Created namespace:{}", namespace);
         return namespace;
     }
 
@@ -866,6 +867,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             break;
         }
         }
+        logger.debug("Created cohort:{}", cohort);
         return cohort;
     }
 
@@ -1147,6 +1149,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             break;
         }
         }
+        logger.debug("Created node:{}", node);
         return node;
     }
 
@@ -1237,7 +1240,6 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             break;
         }
         }
-
         return cohorts;
     }
 
@@ -1441,6 +1443,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             break;
         }
         }
+        logger.debug("Joined cohort:{}", cohort);
         return cohort;
     }
 
@@ -1575,6 +1578,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             break;
         }
         }
+        logger.debug("Described cohort:{}", cohort);
         return cohort;
     }
 
@@ -1758,7 +1762,6 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     namespaceBuilder.addAllCohorts(cohorts);
                 }
                 namespace = namespaceBuilder.build();
-                // logger.info(namespace);
             } catch (final Exception curatorException) {
                 if (curatorException instanceof MembershipServerException) {
                     throw MembershipServerException.class.cast(curatorException);
@@ -1770,6 +1773,8 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             break;
         }
         }
+        // TODO: include Node tree
+        logger.debug("Described namespace:{}", namespace);
         return namespace;
     }
 
@@ -2928,6 +2933,11 @@ final class ZkMembershipDelegate implements MembershipDelegate {
             }
         }
         return cohortType;
+    }
+
+    @Override
+    public void diffNamespace(final String namespace) throws MembershipServerException {
+        // TODO
     }
 
 }

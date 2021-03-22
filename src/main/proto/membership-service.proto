@@ -9,6 +9,7 @@ message Namespace {
   bytes payload = 2;
   int32 version = 3;
   repeated Cohort cohorts = 4;
+  repeated Node nodes = 5;
 }
 
 message Cohort {
