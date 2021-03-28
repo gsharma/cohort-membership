@@ -2938,6 +2938,10 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     @Override
     public void diffNamespace(final String namespace) throws MembershipServerException {
         // TODO
+        // Diff Tree Events to report[eventData]::<br/>
+        // cohortAdded[Cohort], cohortDeleted[cohortId], cohortPayloadChanged[Cohort]<br/>
+        // memberAdded[Member], memberDeleted[memberId], memberPayloadChanged[Member]<br/>
+        // nodeAdded[Node], nodeDeleted[nodeId], nodePayloadChanged[Node]<br/>
     }
 
 }
