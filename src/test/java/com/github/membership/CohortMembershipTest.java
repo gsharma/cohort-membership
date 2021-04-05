@@ -565,6 +565,10 @@ public final class CohortMembershipTest {
                     }
                 }
 
+                final byte[] serializedNamespace = describedNamespace.toByteArray();
+                final Namespace deserializedNamespace = Namespace.newBuilder().mergeFrom(serializedNamespace).build();
+                assertEquals(describedNamespace, deserializedNamespace);
+
                 logger.info("[step-14] purge namespace");
                 final PurgeNamespaceRequest purgeNamespaceRequestOne = PurgeNamespaceRequest.newBuilder()
                         .setNamespace(namespace).build();

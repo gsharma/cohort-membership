@@ -77,6 +77,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
     private final Set<String> trackedNamespaces;
     private final ConcurrentMap<String, InterProcessLock> trackedLocks;
+    private final ConcurrentMap<String, Namespace> cachedNamespaces;
 
     ZkMembershipDelegate(final MembershipServerConfiguration configuration, final DelegateMode mode) {
         this.running = new AtomicBoolean(false);
@@ -89,6 +90,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
 
         this.trackedNamespaces = new CopyOnWriteArraySet<>();
         this.trackedLocks = new ConcurrentHashMap<>();
+        this.cachedNamespaces = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -2936,9 +2938,14 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     }
 
     @Override
-    public void diffNamespace(final String namespace) throws MembershipServerException {
+    public void streamNamespaceChanges(final String namespace, final NamespaceUpdateCallback namespaceUpdateCallback)
+            throws MembershipServerException 
+    {
         // TODO
+        // Register a DiffWorker
+        //
         // Diff Tree Events to report[eventData]::<br/>
+        // namespaceDeleted[name]<br/>
         // cohortAdded[Cohort], cohortDeleted[cohortId], cohortPayloadChanged[Cohort]<br/>
         // memberAdded[Member], memberDeleted[memberId], memberPayloadChanged[Member]<br/>
         // nodeAdded[Node], nodeDeleted[nodeId], nodePayloadChanged[Node]<br/>

@@ -52,7 +52,8 @@ interface MembershipDelegate extends Lifecycle {
 
     Namespace describeNamespace(final String namespace) throws MembershipServerException;
 
-    void diffNamespace(final String namespace) throws MembershipServerException;
+    void streamNamespaceChanges(final String namespace, final NamespaceUpdateCallback namespaceUpdateCallback)
+            throws MembershipServerException;
 
     Member updateMember(final String namespace, final String memberId, final String cohortId,
             final CohortType cohortType, final byte[] memberMetadata, final int expectedVersion)
