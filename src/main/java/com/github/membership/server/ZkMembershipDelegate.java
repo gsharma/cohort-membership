@@ -1614,6 +1614,30 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 }
                 namespaceBuilder.setVersion(namespaceStat.getVersion());
 
+                final String nodeRootPath = "/" + name + "/nodes";
+                final List<String> nodeIds = serverProxyZk.getChildren(nodeRootPath, false);
+                if (nodeIds != null && !nodeIds.isEmpty()) {
+                    final List<Node> nodes = new ArrayList<>();
+                    for (final String nodeId : nodeIds) {
+                        final Node.Builder nodeBuilder = Node.newBuilder();
+                        nodeBuilder.setId(nodeId);
+                        
+                        final String nodePath = nodeRootPath + "/" + nodeId;
+                        nodeBuilder.setPath(nodePath);
+                        
+                        final Stat nodeStat = new Stat();
+                        final byte[] nodePayload = serverProxyZk.getData(nodePath, false, nodeStat);
+                        if (nodePayload != null) {
+                            nodeBuilder.setPayload(toByteString(nodePayload));
+                        }
+                        nodeBuilder.setVersion(nodeStat.getVersion());
+                        
+                        final Node node = nodeBuilder.build();
+                        nodes.add(node);
+                    }
+                    namespaceBuilder.addAllNodes(nodes);
+                }
+
                 final String cohortRootPath = "/" + name + "/cohorts";
                 final List<String> cohortTypes = serverProxyZk.getChildren(cohortRootPath, false);
                 if (cohortTypes != null && !cohortTypes.isEmpty()) {
@@ -1674,6 +1698,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 }
                 namespace = namespaceBuilder.build();
             } catch (final KeeperException keeperException) {
+                logger.error("Problem encountered during describeNamespace for " + name, keeperException);
                 if (keeperException instanceof KeeperException.NodeExistsException) {
                     // node already exists
                 } else {
@@ -1702,6 +1727,30 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                     namespaceBuilder.setPayload(toByteString(namespacePayload));
                 }
                 namespaceBuilder.setVersion(namespaceStat.getVersion());
+
+                final String nodeRootPath = "/" + name + "/nodes";
+                final List<String> nodeIds = serverProxyCurator.getChildren().forPath(nodeRootPath);
+                if (nodeIds != null && !nodeIds.isEmpty()) {
+                    final List<Node> nodes = new ArrayList<>();
+                    for (final String nodeId : nodeIds) {
+                        final Node.Builder nodeBuilder = Node.newBuilder();
+                        nodeBuilder.setId(nodeId);
+                        
+                        final String nodePath = nodeRootPath + "/" + nodeId;
+                        nodeBuilder.setPath(nodePath);
+                        
+                        final Stat nodeStat = new Stat();
+                        final byte[] nodePayload = serverProxyCurator.getData().storingStatIn(nodeStat).forPath(nodePath);
+                        if (nodePayload != null) {
+                            nodeBuilder.setPayload(toByteString(nodePayload));
+                        }
+                        nodeBuilder.setVersion(nodeStat.getVersion());
+                        
+                        final Node node = nodeBuilder.build();
+                        nodes.add(node);
+                    }
+                    namespaceBuilder.addAllNodes(nodes);
+                }
 
                 final String cohortRootPath = "/" + name + "/cohorts";
                 final List<String> cohortTypes = serverProxyCurator.getChildren().forPath(cohortRootPath);
@@ -1765,6 +1814,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                 }
                 namespace = namespaceBuilder.build();
             } catch (final Exception curatorException) {
+                logger.error("Problem encountered during describeNamespace for " + name, curatorException);
                 if (curatorException instanceof MembershipServerException) {
                     throw MembershipServerException.class.cast(curatorException);
                 } else {

@@ -554,6 +554,9 @@ public final class CohortMembershipTest {
                 final Namespace describedNamespace = describeNamespaceResponse.getNamespace();
                 assertNotNull(describedNamespace);
                 assertEquals(namespace, describedNamespace.getName());
+                assertEquals(2, describedNamespace.getNodesList().size());
+                assertTrue(describedNamespace.getNodesList().contains(nodeOne));
+                assertTrue(describedNamespace.getNodesList().contains(nodeTwo));
                 assertEquals(2, describedNamespace.getCohortsList().size());
                 assertTrue(describedNamespace.getCohortsList().contains(describedCohortOne));
                 assertTrue(describedNamespace.getCohortsList().contains(describedCohortTwo));
