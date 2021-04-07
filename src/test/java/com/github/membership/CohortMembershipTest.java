@@ -258,7 +258,7 @@ public final class CohortMembershipTest {
                 assertEquals(1, joinCohortResponseOne.getCohort().getMembersList().size());
                 final Member memberOne = joinCohortResponseOne.getCohort().getMembersList().get(0);
                 assertNotNull(memberOne);
-                assertEquals(cohortOne.getPath() + "/members/" + memberOne.getMemberId(), memberOne.getPath());
+                assertEquals(cohortOne.getPath() + "/members/" + memberOne.getId(), memberOne.getPath());
                 assertEquals(0, memberOne.getVersion());
                 assertTrue(memberOne.getPayload().isEmpty());
 
@@ -289,7 +289,7 @@ public final class CohortMembershipTest {
                 assertEquals(2, members.size());
                 final List<String> memberIds = new ArrayList<>();
                 for (final Member member : members) {
-                    memberIds.add(member.getMemberId());
+                    memberIds.add(member.getId());
                     assertEquals(0, member.getVersion());
                     assertTrue(member.getPayload().isEmpty());
                 }
@@ -328,7 +328,7 @@ public final class CohortMembershipTest {
                 assertEquals(cohortOne.getType(), describedCohortThree.getType());
                 members = describedCohortThree.getMembersList();
                 assertEquals(1, members.size());
-                assertEquals(memberOneId, members.get(0).getMemberId());
+                assertEquals(memberOneId, members.get(0).getId());
 
                 logger.info("[step-15] delete cohortTwo");
                 final DeleteCohortRequest deleteCohortRequestOne = DeleteCohortRequest.newBuilder()
@@ -498,7 +498,7 @@ public final class CohortMembershipTest {
                 assertEquals(1, joinCohortResponseOne.getCohort().getMembersList().size());
                 final Member memberOne = joinCohortResponseOne.getCohort().getMembersList().get(0);
                 assertNotNull(memberOne);
-                assertEquals(cohortOne.getPath() + "/members/" + memberOne.getMemberId(), memberOne.getPath());
+                assertEquals(cohortOne.getPath() + "/members/" + memberOne.getId(), memberOne.getPath());
                 assertEquals(0, memberOne.getVersion());
                 assertTrue(memberOne.getPayload().isEmpty());
 
@@ -525,7 +525,7 @@ public final class CohortMembershipTest {
                 assertEquals(2, members.size());
                 final List<String> memberIds = new ArrayList<>();
                 for (final Member member : members) {
-                    memberIds.add(member.getMemberId());
+                    memberIds.add(member.getId());
                     assertEquals(0, member.getVersion());
                     assertTrue(member.getPayload().isEmpty());
                 }
@@ -704,7 +704,7 @@ public final class CohortMembershipTest {
                 // final Member memberTwo = joinCohortResponseTwo.getMember();
                 // assertNotNull(memberTwo);
                 // assertEquals(cohortOne.getPath() + "/members/" +
-                // memberTwo.getMemberId(), memberTwo.getPath());
+                // memberTwo.getId(), memberTwo.getPath());
 
                 logger.info("[step-9] describe cohortOne, check for memberOne and memberTwo");
                 final DescribeCohortRequest describeCohortRequestOne = DescribeCohortRequest.newBuilder()
@@ -719,7 +719,7 @@ public final class CohortMembershipTest {
                 assertEquals(2, members.size());
                 final List<String> memberIds = new ArrayList<>();
                 for (final Member member : members) {
-                    memberIds.add(member.getMemberId());
+                    memberIds.add(member.getId());
                 }
                 assertTrue(memberIds.contains(memberOneId));
                 assertTrue(memberIds.contains(memberTwoId));
@@ -744,7 +744,7 @@ public final class CohortMembershipTest {
                 assertEquals(cohortOne.getType(), describedCohortTwo.getType());
                 members = describedCohortTwo.getMembersList();
                 assertEquals(1, members.size());
-                assertEquals(memberOneId, members.get(0).getMemberId());
+                assertEquals(memberOneId, members.get(0).getId());
 
                 logger.info("[step-13] list nodes, check for nodeOne only");
                 final ListNodesRequest listNodesRequestTwo = ListNodesRequest.newBuilder().setNamespace(namespace)

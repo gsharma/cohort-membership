@@ -1284,7 +1284,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         CreateMode.EPHEMERAL, memberStat);
                 logger.debug("member:{}, stat:{}", memberChildPath, memberStat);
 
-                final Member.Builder memberBuilder = Member.newBuilder().setMemberId(memberId).setCohortType(cohortType)
+                final Member.Builder memberBuilder = Member.newBuilder().setId(memberId).setCohortType(cohortType)
                         .setCohortId(cohortId).setNodeId(nodeId).setPath(memberChildPath);
                 if (memberMetadata != null) {
                     memberBuilder.setPayload(toByteString(memberMetadata));
@@ -1361,7 +1361,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         .forPath(memberChildPath, memberMetadata);
                 logger.debug("member:{}, stat:{}", memberChildPath, memberStat);
 
-                final Member.Builder memberBuilder = Member.newBuilder().setMemberId(memberId).setCohortType(cohortType)
+                final Member.Builder memberBuilder = Member.newBuilder().setId(memberId).setCohortType(cohortType)
                         .setCohortId(cohortId).setNodeId(nodeId).setPath(memberChildPath);
                 if (memberMetadata != null) {
                     memberBuilder.setPayload(toByteString(memberMetadata));
@@ -1481,7 +1481,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         final String memberIdPath = cohortMembersPath + "/" + memberId;
                         if (serverProxyZk.exists(memberIdPath, false) != null) {
                             final Member.Builder memberBuilder = Member.newBuilder().setCohortId(cohortId)
-                                    .setCohortType(cohortType).setMemberId(memberId).setPath(memberIdPath);
+                                    .setCohortType(cohortType).setId(memberId).setPath(memberIdPath);
                             final Stat memberIdStat = new Stat();
                             final byte[] memberPayload = serverProxyZk.getData(memberIdPath, false, memberIdStat);
                             if (memberPayload != null) {
@@ -1545,7 +1545,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                         final String memberIdPath = cohortMembersPath + "/" + memberId;
                         if (serverProxyCurator.checkExists().forPath(memberIdPath) != null) {
                             final Member.Builder memberBuilder = Member.newBuilder().setCohortId(cohortId)
-                                    .setCohortType(cohortType).setMemberId(memberId).setPath(memberIdPath);
+                                    .setCohortType(cohortType).setId(memberId).setPath(memberIdPath);
                             final Stat memberIdStat = new Stat();
                             final byte[] memberPayload = serverProxyCurator.getData().storingStatIn(memberIdStat)
                                     .forPath(memberIdPath);
@@ -1673,7 +1673,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                             final Member.Builder memberBuilder = Member.newBuilder();
                                             memberBuilder.setCohortId(cohortId);
                                             memberBuilder.setCohortType(cohortType);
-                                            memberBuilder.setMemberId(memberId);
+                                            memberBuilder.setId(memberId);
                                             memberBuilder.setPath(memberIdPath);
                                             // memberBuilder.setNodeId(null);
                                             final Stat memberStat = new Stat();
@@ -1789,7 +1789,7 @@ final class ZkMembershipDelegate implements MembershipDelegate {
                                             final Member.Builder memberBuilder = Member.newBuilder();
                                             memberBuilder.setCohortId(cohortId);
                                             memberBuilder.setCohortType(cohortType);
-                                            memberBuilder.setMemberId(memberId);
+                                            memberBuilder.setId(memberId);
                                             memberBuilder.setPath(memberIdPath);
                                             // memberBuilder.setNodeId(null);
                                             final Stat memberStat = new Stat();
@@ -3004,13 +3004,25 @@ final class ZkMembershipDelegate implements MembershipDelegate {
     // TODO
     private final static class NamespaceDiffWorker extends Thread {
         private final String namespace;
+        private final MembershipDelegate membershipDelegate;
+        private Namespace cachedNamespace;
 
-        private NamespaceDiffWorker(final String namespace) {
+        private NamespaceDiffWorker(final MembershipDelegate membershipDelegate, final String namespace) {
+            setName("namespace-diff-worker");
+            setDaemon(true);
+            this.membershipDelegate = membershipDelegate;
             this.namespace = namespace;
+            start();
         }
 
+        // TODO
         @Override
-        public void run() {}
+        public void run() {
+            try {
+                final Namespace latestNamespce = membershipDelegate.describeNamespace(namespace);
+            } catch (final MembershipServerException problem) {
+            }
+        }
     }
 
 }

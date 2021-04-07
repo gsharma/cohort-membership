@@ -22,7 +22,7 @@ message Cohort {
 }
 
 message Member {
-  string memberId = 1;
+  string id = 1;
   string nodeId = 2;
   string cohortId = 3;
   CohortType cohortType = 4;
@@ -51,6 +51,45 @@ enum CohortType {
   TWO = 1;
   THREE = 2;
   FOUR = 3;
+}
+
+message NamespaceChangeSummary {
+  string namespace = 1;
+  NamespaceChange namespaceChanges = 2;
+  repeated CohortChange cohortChanges = 3;
+  repeated MemberChange memberChanges = 4;
+  repeated NodeChange nodeChanges = 5;
+  Namespace latestNamespace = 6;
+}
+
+message NamespaceChange {
+  ChangeType changeType = 1;
+  string name = 2;
+  int32 version = 3;
+}
+
+message CohortChange {
+  ChangeType changeType = 1;
+  string id = 2;
+  int32 version = 3;
+}
+
+message MemberChange {
+  ChangeType changeType = 1;
+  string id = 2;
+  int32 version = 3;
+}
+
+message NodeChange {
+  ChangeType changeType = 1;
+  string id = 2;
+  int32 version = 3;
+}
+
+enum ChangeType {
+  ADDED = 0;
+  DELETED = 1;
+  PAYLOAD_CHANGED = 2;
 }
 
 message NewNamespaceRequest {
