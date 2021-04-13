@@ -4,11 +4,7 @@ A library for providing the grouping/cohort construct and for  maintaining and o
 This library also provides simple primitives for lease-based distributed locking.
 
 ## Core Constructs
-Namespace
-Node
-Cohort
-Member
-Lock
+Namespace, Node, Cohort, Member, Lock
 
 ## API Reference
 ```java
